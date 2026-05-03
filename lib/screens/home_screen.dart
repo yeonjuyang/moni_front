@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/transaction.dart';
+import '../services/transaction_service.dart';
 import 'tabs/ledger_tab.dart';
 import 'tabs/stats_tab.dart';
 import 'tabs/settings_tab.dart';
@@ -14,7 +15,31 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   DateTime _currentMonth = DateTime(DateTime.now().year, DateTime.now().month);
-  final List<Transaction> _transactions = List.from(mockTransactions);
+  List<Transaction> _transactions = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTransactions();
+  }
+
+  Future<void> _loadTransactions() async {
+    try {
+      final transactions = await TransactionService.fetchTransactions(ledgerId: 1);
+      setState(() {
+        _transactions = transactions;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('데이터를 불러오지 못했습니다: $e')),
+        );
+      }
+    }
+  }
 
   void _addTransaction(Transaction transaction) {
     setState(() => _transactions.add(transaction));
@@ -26,6 +51,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     final tabs = [
       LedgerTab(
         currentMonth: _currentMonth,

@@ -18,6 +18,19 @@ class Transaction {
     required this.date,
     required this.category,
   });
+
+  factory Transaction.fromJson(Map<String, dynamic> json) {
+    return Transaction(
+      id: json['id'].toString(),
+      title: json['memo'] ?? '',
+      amount: (json['amount'] as num).toInt(),
+      type: json['transactionType'] == 'INCOME'
+          ? TransactionType.income
+          : TransactionType.expense,
+      date: DateTime.parse(json['transactionDate']),
+      category: json['categoryName'] ?? '기타',
+    );
+  }
 }
 
 const List<String> expenseCategories = ['식비', '카페', '교통', '쇼핑', '구독', '의료', '주거', '기타'];

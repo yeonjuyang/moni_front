@@ -1,11 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/auth_service.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
-  Future<void> _login(BuildContext context, String provider) async {
+  Future<void> _loginWithKakao(BuildContext context) async {
+    try {
+      await AuthService.loginWithKakao();
+      if (!context.mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('카카오 로그인 실패: $e')),
+      );
+    }
+  }
+
+  Future<void> _loginWithNaver(BuildContext context) async {
+    try {
+      await AuthService.loginWithNaver();
+      if (!context.mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('네이버 로그인 실패: $e')),
+      );
+    }
+  }
+
+  // 카카오, 애플은 추후 구현
+  Future<void> _loginPlaceholder(BuildContext context, String provider) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('is_logged_in', true);
     await prefs.setString('login_provider', provider);
@@ -116,7 +150,7 @@ class LoginScreen extends StatelessWidget {
                   textColor: const Color(0xFF191919),
                   badgeColor: const Color(0xFF191919),
                   badgeTextColor: const Color(0xFFFEE500),
-                  onPressed: () => _login(context, 'kakao'),
+                  onPressed: () => _loginWithKakao(context),
                 ),
                 const SizedBox(height: 10),
 
@@ -127,7 +161,7 @@ class LoginScreen extends StatelessWidget {
                   textColor: Colors.white,
                   badgeColor: const Color(0xFF02A94E),
                   badgeTextColor: Colors.white,
-                  onPressed: () => _login(context, 'naver'),
+                  onPressed: () => _loginWithNaver(context),
                 ),
                 const SizedBox(height: 10),
 
@@ -139,7 +173,7 @@ class LoginScreen extends StatelessWidget {
                   badgeColor: const Color(0xFF333333),
                   badgeTextColor: Colors.white,
                   badgeIcon: Icons.apple,
-                  onPressed: () => _login(context, 'apple'),
+                  onPressed: () => _loginPlaceholder(context, 'apple'),
                 ),
                 const SizedBox(height: 20),
 

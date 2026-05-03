@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../services/auth_service.dart';
+import '../asset_settings_screen.dart';
+import '../category_settings_screen.dart';
 import '../login_screen.dart';
 
 class SettingsTab extends StatelessWidget {
@@ -11,8 +14,7 @@ class SettingsTab extends StatelessWidget {
   }
 
   Future<void> _logout(BuildContext context) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    await AuthService.logout();
     if (!context.mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
@@ -67,6 +69,35 @@ class SettingsTab extends StatelessWidget {
                 ),
                 const Divider(),
               ],
+              ListTile(
+                leading: const Icon(Icons.book_outlined),
+                title: const Text('가계부 설정'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {},
+              ),
+              ListTile(
+                leading: const Icon(Icons.category_outlined),
+                title: const Text('카테고리 설정'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CategorySettingsScreen(),
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.account_balance_wallet_outlined),
+                title: const Text('자산 설정'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AssetSettingsScreen(),
+                  ),
+                ),
+              ),
+              const Divider(),
               ListTile(
                 leading: const Icon(Icons.logout, color: Colors.red),
                 title: const Text('로그아웃', style: TextStyle(color: Colors.red)),
