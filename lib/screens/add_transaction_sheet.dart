@@ -3,17 +3,22 @@ import '../models/asset.dart';
 import '../models/transaction.dart';
 import '../services/asset_service.dart';
 import '../services/transaction_service.dart';
+import '../services/user_service.dart';
 import '../utils/formatters.dart';
 import '../widgets/calculator_widget.dart';
 
 class AddTransactionSheet extends StatefulWidget {
   final DateTime initialDate;
   final ValueChanged<Transaction> onSave;
+  final Transaction? editing;
+  final VoidCallback? onDelete;
 
   const AddTransactionSheet({
     super.key,
     required this.initialDate,
     required this.onSave,
+    this.editing,
+    this.onDelete,
   });
 
   @override
@@ -21,28 +26,55 @@ class AddTransactionSheet extends StatefulWidget {
 }
 
 class _AddTransactionSheetState extends State<AddTransactionSheet> {
-  TransactionType _type = TransactionType.expense;
+  late TransactionType _type;
   final _titleController = TextEditingController();
-  int _amount = 0;
+  late int _amount;
   bool _showCalculator = false;
   bool _isSaving = false;
-  String _selectedCategory = expenseCategories.first;
+  late String _selectedCategory;
   late DateTime _selectedDate;
 
   List<AssetModel> _assets = [];
   int? _selectedAssetId;
   bool _isLoadingAssets = true;
 
+  List<UserModel> _users = [];
+  int? _selectedUserId;
+  bool _isLoadingUsers = true;
+  final _noteController = TextEditingController();
+
+  bool get _isEditing => widget.editing != null;
+
   @override
   void initState() {
     super.initState();
-    _selectedDate = DateTime.now();
+    final e = widget.editing;
+    if (e != null) {
+      _type = e.type;
+      _amount = e.amount;
+      _selectedDate = e.date;
+      _titleController.text = e.title;
+      final cats = e.type == TransactionType.expense
+          ? expenseCategories
+          : incomeCategories;
+      _selectedCategory =
+          cats.contains(e.category) ? e.category : cats.first;
+      _selectedUserId = e.paidByUserId;
+      _noteController.text = e.note ?? '';
+    } else {
+      _type = TransactionType.expense;
+      _amount = 0;
+      _selectedDate = DateTime.now();
+      _selectedCategory = expenseCategories.first;
+    }
     _loadAssets();
+    _loadUsers();
   }
 
   @override
   void dispose() {
     _titleController.dispose();
+    _noteController.dispose();
     super.dispose();
   }
 
@@ -58,6 +90,25 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       }
     } catch (_) {
       if (mounted) setState(() => _isLoadingAssets = false);
+    }
+  }
+
+  Future<void> _loadUsers() async {
+    try {
+      final users = await UserService.fetchUsers();
+      if (mounted) {
+        setState(() {
+          _users = users;
+          // 수정 모드: 이미 _selectedUserId 세팅됨
+          // 등록 모드: 첫 번째 사용자 자동 선택
+          if (!_isEditing && users.isNotEmpty) {
+            _selectedUserId = users.first.userId;
+          }
+          _isLoadingUsers = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingUsers = false);
     }
   }
 
@@ -95,21 +146,38 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     setState(() => _isSaving = true);
 
     try {
+      final selectedUser = _users.where((u) => u.userId == _selectedUserId).firstOrNull;
       final draft = Transaction(
-        id: '',
+        id: widget.editing?.id ?? '',
         title: title,
         amount: _amount,
         type: _type,
         date: _selectedDate,
         category: _selectedCategory,
+        paidByUserId: _selectedUserId,
+        paidByUserNickname: selectedUser?.nickname,
+        note: _noteController.text.trim().isEmpty
+            ? null
+            : _noteController.text.trim(),
       );
 
-      final saved = await TransactionService.createTransaction(
-        ledgerId: 1,
-        transaction: draft,
-        fromAssetId: _type == TransactionType.expense ? _selectedAssetId : null,
-        toAssetId: _type == TransactionType.income ? _selectedAssetId : null,
-      );
+      final Transaction saved;
+      if (_isEditing) {
+        saved = await TransactionService.updateTransaction(
+          ledgerId: 1,
+          transactionId: widget.editing!.id,
+          transaction: draft,
+          fromAssetId: _type == TransactionType.expense ? _selectedAssetId : null,
+          toAssetId: _type == TransactionType.income ? _selectedAssetId : null,
+        );
+      } else {
+        saved = await TransactionService.createTransaction(
+          ledgerId: 1,
+          transaction: draft,
+          fromAssetId: _type == TransactionType.expense ? _selectedAssetId : null,
+          toAssetId: _type == TransactionType.income ? _selectedAssetId : null,
+        );
+      }
 
       widget.onSave(saved);
       if (mounted) Navigator.pop(context);
@@ -117,6 +185,46 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('저장 실패: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _delete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('거래 삭제'),
+        content: const Text('이 거래 내역을 삭제하시겠어요?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(ctx).colorScheme.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('삭제'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isSaving = true);
+    try {
+      await TransactionService.deleteTransaction(
+        ledgerId: 1,
+        transactionId: widget.editing!.id,
+      );
+      widget.onDelete?.call();
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('삭제 실패: $e')));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -154,10 +262,14 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
           Expanded(
             child: CalculatorWidget(
               initialValue: _amount,
-              onConfirm: (value) => setState(() {
-                _amount = value;
-                _showCalculator = false;
-              }),
+              onConfirm: (value) {
+                if (mounted) {
+                  setState(() {
+                    _amount = value;
+                    _showCalculator = false;
+                  });
+                }
+              },
             ),
           ),
         ],
@@ -189,6 +301,20 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               ),
             ),
 
+            if (_isEditing)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('거래 수정',
+                      style: TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.w600)),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    onPressed: _isSaving ? null : _delete,
+                  ),
+                ],
+              ),
+
             // 수입/지출 토글
             SizedBox(
               width: double.infinity,
@@ -216,7 +342,18 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             ),
             const SizedBox(height: 12),
 
-            // 금액 (계산기)
+            // 비고 (선택)
+            TextField(
+              controller: _noteController,
+              decoration: const InputDecoration(
+                labelText: '비고 (선택)',
+                border: OutlineInputBorder(),
+              ),
+              textInputAction: TextInputAction.done,
+            ),
+            const SizedBox(height: 12),
+
+            // 금액
             InkWell(
               onTap: () => setState(() => _showCalculator = true),
               borderRadius: BorderRadius.circular(8),
@@ -248,6 +385,10 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
 
             // 자산
             _buildAssetSection(),
+            const SizedBox(height: 16),
+
+            // 사람
+            _buildPersonSection(),
             const SizedBox(height: 16),
 
             // 카테고리
@@ -296,14 +437,15 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               width: double.infinity,
               height: 52,
               child: FilledButton(
-                onPressed: _isSaving ? null : () => _save(),
+                onPressed: _isSaving ? null : _save,
                 child: _isSaving
                     ? const SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white))
-                    : const Text('저장', style: TextStyle(fontSize: 16)),
+                    : Text(_isEditing ? '수정' : '저장',
+                        style: const TextStyle(fontSize: 16)),
               ),
             ),
           ],
@@ -356,6 +498,46 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               selected: _selectedAssetId == asset.assetId,
               onSelected: (_) =>
                   setState(() => _selectedAssetId = asset.assetId),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPersonSection() {
+    if (_isLoadingUsers) {
+      return const SizedBox(
+        height: 36,
+        child: Row(children: [
+          SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2)),
+          SizedBox(width: 8),
+          Text('사용자 불러오는 중...', style: TextStyle(color: Colors.black38)),
+        ]),
+      );
+    }
+
+    if (_users.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('사람',
+            style: TextStyle(fontSize: 13, color: Colors.black54)),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: _users.map((user) {
+            return ChoiceChip(
+              avatar: const Icon(Icons.person_outline, size: 16),
+              label: Text(user.nickname),
+              selected: _selectedUserId == user.userId,
+              onSelected: (_) =>
+                  setState(() => _selectedUserId = user.userId),
             );
           }).toList(),
         ),

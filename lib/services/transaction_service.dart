@@ -17,20 +17,49 @@ class TransactionService {
   }) async {
     final response = await ApiClient.dio.post(
       '/api/ledgers/$ledgerId/transactions',
-      data: {
-        'transactionType':
-            transaction.type == TransactionType.income ? 'INCOME' : 'EXPENSE',
-        'amount': transaction.amount,
-        'memo': transaction.title,
-        'transactionDate':
-            '${transaction.date.year}-'
-            '${transaction.date.month.toString().padLeft(2, '0')}-'
-            '${transaction.date.day.toString().padLeft(2, '0')}',
-        'categoryName': transaction.category,
-        'fromAssetId': fromAssetId,
-        'toAssetId': toAssetId,
-      },
+      data: _buildBody(transaction, fromAssetId, toAssetId),
     );
     return Transaction.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  static Future<Transaction> updateTransaction({
+    required int ledgerId,
+    required String transactionId,
+    required Transaction transaction,
+    int? fromAssetId,
+    int? toAssetId,
+  }) async {
+    final response = await ApiClient.dio.put(
+      '/api/ledgers/$ledgerId/transactions/$transactionId',
+      data: _buildBody(transaction, fromAssetId, toAssetId),
+    );
+    return Transaction.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  static Future<void> deleteTransaction({
+    required int ledgerId,
+    required String transactionId,
+  }) async {
+    await ApiClient.dio.delete(
+      '/api/ledgers/$ledgerId/transactions/$transactionId',
+    );
+  }
+
+  static Map<String, dynamic> _buildBody(
+      Transaction t, int? fromAssetId, int? toAssetId) {
+    return {
+      'transactionType': t.type == TransactionType.income ? 'INCOME' : 'EXPENSE',
+      'amount': t.amount,
+      'memo': t.title,
+      'transactionDate':
+          '${t.date.year}-'
+          '${t.date.month.toString().padLeft(2, '0')}-'
+          '${t.date.day.toString().padLeft(2, '0')}',
+      'categoryName': t.category,
+      'fromAssetId': fromAssetId,
+      'toAssetId': toAssetId,
+      'paidByUserId': t.paidByUserId,
+      'note': t.note,
+    };
   }
 }

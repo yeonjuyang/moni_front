@@ -230,7 +230,8 @@ class _AssetSheet extends StatefulWidget {
 class _AssetSheetState extends State<_AssetSheet> {
   late final TextEditingController _nameController;
   late String _selectedType;
-  int _balance = 0;
+  late int _balance;
+  bool _balanceSet = false;
   bool _showCalculator = false;
   bool _isSaving = false;
 
@@ -241,6 +242,7 @@ class _AssetSheetState extends State<_AssetSheet> {
     _nameController = TextEditingController(text: e?.assetName ?? '');
     _selectedType = e?.assetType ?? 'BANK';
     _balance = e?.balance ?? 0;
+    _balanceSet = e != null;
   }
 
   @override
@@ -293,10 +295,15 @@ class _AssetSheetState extends State<_AssetSheet> {
             Expanded(
               child: CalculatorWidget(
                 initialValue: _balance,
-                onConfirm: (value) => setState(() {
-                  _balance = value;
-                  _showCalculator = false;
-                }),
+                onConfirm: (value) {
+                  if (mounted) {
+                    setState(() {
+                      _balance = value;
+                      _balanceSet = true;
+                      _showCalculator = false;
+                    });
+                  }
+                },
               ),
             ),
           ],
@@ -377,13 +384,12 @@ class _AssetSheetState extends State<_AssetSheet> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        _balance > 0
+                        _balanceSet
                             ? '${formatCurrency(_balance)}원'
                             : '잔액',
                         style: TextStyle(
                           fontSize: 15,
-                          color:
-                              _balance > 0 ? null : Colors.black38,
+                          color: _balanceSet ? null : Colors.black38,
                         ),
                       ),
                     ),

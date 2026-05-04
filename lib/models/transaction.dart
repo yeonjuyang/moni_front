@@ -9,6 +9,9 @@ class Transaction {
   final TransactionType type;
   final DateTime date;
   final String category;
+  final int? paidByUserId;
+  final String? paidByUserNickname;
+  final String? note;
 
   const Transaction({
     required this.id,
@@ -17,6 +20,9 @@ class Transaction {
     required this.type,
     required this.date,
     required this.category,
+    this.paidByUserId,
+    this.paidByUserNickname,
+    this.note,
   });
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
@@ -29,6 +35,11 @@ class Transaction {
           : TransactionType.expense,
       date: DateTime.parse(json['transactionDate']),
       category: json['categoryName'] ?? '기타',
+      paidByUserId: json['paidByUserId'] != null
+          ? (json['paidByUserId'] as num).toInt()
+          : null,
+      paidByUserNickname: json['paidByUserNickname'] as String?,
+      note: json['note'] as String?,
     );
   }
 }

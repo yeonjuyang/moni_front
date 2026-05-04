@@ -45,6 +45,17 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _transactions.add(transaction));
   }
 
+  void _updateTransaction(Transaction updated) {
+    setState(() {
+      final idx = _transactions.indexWhere((t) => t.id == updated.id);
+      if (idx != -1) _transactions[idx] = updated;
+    });
+  }
+
+  void _deleteTransaction(String id) {
+    setState(() => _transactions.removeWhere((t) => t.id == id));
+  }
+
   void _changeMonth(DateTime month) {
     setState(() => _currentMonth = month);
   }
@@ -63,6 +74,8 @@ class _HomeScreenState extends State<HomeScreen> {
         transactions: _transactions,
         onMonthChanged: _changeMonth,
         onAddTransaction: _addTransaction,
+        onUpdateTransaction: _updateTransaction,
+        onDeleteTransaction: _deleteTransaction,
       ),
       StatsTab(
         currentMonth: _currentMonth,
