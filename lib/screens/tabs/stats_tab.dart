@@ -7,19 +7,23 @@ import '../../widgets/month_selector.dart';
 
 // ── Filter config ─────────────────────────────────────────────────────────────
 
+enum _PeriodMode { monthly, yearly, custom }
+
 class _FilterConfig {
-  final DateTimeRange? customRange;
-  final Set<int> selectedUserIds; // empty = all
+  final _PeriodMode periodMode;
+  final DateTimeRange? customRange; // used only when periodMode == custom
+  final Set<int> selectedUserIds;   // empty = all
   final Set<String> excludedCategories;
 
   const _FilterConfig({
+    this.periodMode = _PeriodMode.monthly,
     this.customRange,
     this.selectedUserIds = const {},
     this.excludedCategories = const {},
   });
 
   bool get hasActiveFilter =>
-      customRange != null ||
+      periodMode != _PeriodMode.monthly ||
       selectedUserIds.isNotEmpty ||
       excludedCategories.isNotEmpty;
 
@@ -65,18 +69,32 @@ class _StatsTabState extends State<StatsTab> {
   List<Transaction> get _baseTransactions {
     var list = widget.transactions;
 
-    final range = _filter.customRange;
-    if (range != null) {
-      list = list
-          .where((t) =>
-              !t.date.isBefore(range.start) && !t.date.isAfter(range.end))
-          .toList();
-    } else {
-      list = list
-          .where((t) =>
-              t.date.year == widget.currentMonth.year &&
-              t.date.month == widget.currentMonth.month)
-          .toList();
+    switch (_filter.periodMode) {
+      case _PeriodMode.monthly:
+        list = list
+            .where((t) =>
+                t.date.year == widget.currentMonth.year &&
+                t.date.month == widget.currentMonth.month)
+            .toList();
+      case _PeriodMode.yearly:
+        list = list
+            .where((t) => t.date.year == widget.currentMonth.year)
+            .toList();
+      case _PeriodMode.custom:
+        final range = _filter.customRange;
+        if (range != null) {
+          list = list
+              .where((t) =>
+                  !t.date.isBefore(range.start) &&
+                  !t.date.isAfter(range.end))
+              .toList();
+        } else {
+          list = list
+              .where((t) =>
+                  t.date.year == widget.currentMonth.year &&
+                  t.date.month == widget.currentMonth.month)
+              .toList();
+        }
     }
 
     if (_filter.selectedUserIds.isNotEmpty) {
@@ -132,7 +150,21 @@ class _StatsTabState extends State<StatsTab> {
   Widget _buildActiveFilterChips() {
     final chips = <Widget>[];
 
-    if (_filter.customRange != null) {
+    if (_filter.periodMode == _PeriodMode.yearly) {
+      chips.add(Chip(
+        label: Text('${widget.currentMonth.year}년 전체',
+            style: const TextStyle(fontSize: 12)),
+        deleteIcon: const Icon(Icons.close, size: 14),
+        onDeleted: () => setState(() => _filter = _FilterConfig(
+              selectedUserIds: _filter.selectedUserIds,
+              excludedCategories: _filter.excludedCategories,
+            )),
+        visualDensity: VisualDensity.compact,
+      ));
+    }
+
+    if (_filter.periodMode == _PeriodMode.custom &&
+        _filter.customRange != null) {
       final r = _filter.customRange!;
       chips.add(Chip(
         label: Text(
@@ -155,6 +187,7 @@ class _StatsTabState extends State<StatsTab> {
         label: Text(user.nickname, style: const TextStyle(fontSize: 12)),
         deleteIcon: const Icon(Icons.close, size: 14),
         onDeleted: () => setState(() => _filter = _FilterConfig(
+              periodMode: _filter.periodMode,
               customRange: _filter.customRange,
               selectedUserIds:
                   Set.from(_filter.selectedUserIds)..remove(userId),
@@ -169,6 +202,7 @@ class _StatsTabState extends State<StatsTab> {
         label: Text('$cat 제외', style: const TextStyle(fontSize: 12)),
         deleteIcon: const Icon(Icons.close, size: 14),
         onDeleted: () => setState(() => _filter = _FilterConfig(
+              periodMode: _filter.periodMode,
               customRange: _filter.customRange,
               selectedUserIds: _filter.selectedUserIds,
               excludedCategories:
@@ -201,24 +235,37 @@ class _StatsTabState extends State<StatsTab> {
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         backgroundColor: const Color(0xFFF8F9FA),
-        title: _filter.customRange != null
-            ? Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('직접 지정',
-                      style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.black.withValues(alpha: 0.4))),
-                  Text(
-                    _rangeLabel(_filter.customRange!),
+        title: switch (_filter.periodMode) {
+          _PeriodMode.yearly => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('연별',
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.black.withValues(alpha: 0.4))),
+                Text('${widget.currentMonth.year}년',
                     style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w600),
-                  ),
-                ],
-              )
-            : MonthSelector(
-                currentMonth: widget.currentMonth,
-                onChanged: widget.onMonthChanged),
+                        fontSize: 16, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          _PeriodMode.custom when _filter.customRange != null => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('기간 설정',
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.black.withValues(alpha: 0.4))),
+                Text(
+                  _rangeLabel(_filter.customRange!),
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          _ => MonthSelector(
+              currentMonth: widget.currentMonth,
+              onChanged: widget.onMonthChanged),
+        },
         centerTitle: true,
         elevation: 0,
         actions: [
@@ -315,7 +362,7 @@ class _FilterSheet extends StatefulWidget {
 }
 
 class _FilterSheetState extends State<_FilterSheet> {
-  late bool _useCustomRange;
+  late _PeriodMode _periodMode;
   DateTimeRange? _customRange;
   late Set<int> _selectedUserIds;
   late Set<String> _excludedCategories;
@@ -323,7 +370,7 @@ class _FilterSheetState extends State<_FilterSheet> {
   @override
   void initState() {
     super.initState();
-    _useCustomRange = widget.initial.customRange != null;
+    _periodMode = widget.initial.periodMode;
     _customRange = widget.initial.customRange;
     _selectedUserIds = Set.from(widget.initial.selectedUserIds);
     _excludedCategories = Set.from(widget.initial.excludedCategories);
@@ -345,7 +392,7 @@ class _FilterSheetState extends State<_FilterSheet> {
   }
 
   void _reset() => setState(() {
-        _useCustomRange = false;
+        _periodMode = _PeriodMode.monthly;
         _customRange = null;
         _selectedUserIds = {};
         _excludedCategories = {};
@@ -354,7 +401,8 @@ class _FilterSheetState extends State<_FilterSheet> {
   void _apply() => Navigator.pop(
         context,
         _FilterConfig(
-          customRange: _useCustomRange ? _customRange : null,
+          periodMode: _periodMode,
+          customRange: _periodMode == _PeriodMode.custom ? _customRange : null,
           selectedUserIds: Set.from(_selectedUserIds),
           excludedCategories: Set.from(_excludedCategories),
         ),
@@ -430,15 +478,12 @@ class _FilterSheetState extends State<_FilterSheet> {
           ),
           // 헤더
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 8, 0),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
             child: Row(
               children: [
                 const Text('필터',
                     style: TextStyle(
                         fontSize: 17, fontWeight: FontWeight.w700)),
-                const Spacer(),
-                TextButton(
-                    onPressed: _reset, child: const Text('초기화')),
               ],
             ),
           ),
@@ -458,25 +503,34 @@ class _FilterSheetState extends State<_FilterSheet> {
                       Expanded(
                         child: _PeriodOption(
                           label: '월별',
-                          selected: !_useCustomRange,
+                          selected: _periodMode == _PeriodMode.monthly,
                           onTap: () =>
-                              setState(() => _useCustomRange = false),
+                              setState(() => _periodMode = _PeriodMode.monthly),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: _PeriodOption(
-                          label: '직접 지정',
-                          selected: _useCustomRange,
+                          label: '연별',
+                          selected: _periodMode == _PeriodMode.yearly,
+                          onTap: () =>
+                              setState(() => _periodMode = _PeriodMode.yearly),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _PeriodOption(
+                          label: '기간 설정',
+                          selected: _periodMode == _PeriodMode.custom,
                           onTap: () async {
-                            setState(() => _useCustomRange = true);
+                            setState(() => _periodMode = _PeriodMode.custom);
                             await _pickDateRange();
                           },
                         ),
                       ),
                     ],
                   ),
-                  if (_useCustomRange) ...[
+                  if (_periodMode == _PeriodMode.custom) ...[
                     const SizedBox(height: 10),
                     InkWell(
                       onTap: _pickDateRange,
@@ -500,8 +554,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                                     ' ~ '
                                     '${_customRange!.end.year}.${_customRange!.end.month.toString().padLeft(2, '0')}.${_customRange!.end.day.toString().padLeft(2, '0')}'
                                   : '날짜 범위 선택',
-                              style:
-                                  TextStyle(fontSize: 13, color: primary),
+                              style: TextStyle(fontSize: 13, color: primary),
                             ),
                           ],
                         ),
@@ -556,17 +609,34 @@ class _FilterSheetState extends State<_FilterSheet> {
             ),
           ),
 
-          // 적용 버튼
+          // 하단 버튼
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-            child: SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: FilledButton(
-                onPressed: _apply,
-                child:
-                    const Text('적용', style: TextStyle(fontSize: 16)),
-              ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 50,
+                    child: OutlinedButton(
+                      onPressed: _reset,
+                      child: const Text('초기화',
+                          style: TextStyle(fontSize: 16)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: SizedBox(
+                    height: 50,
+                    child: FilledButton(
+                      onPressed: _apply,
+                      child: const Text('적용',
+                          style: TextStyle(fontSize: 16)),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
