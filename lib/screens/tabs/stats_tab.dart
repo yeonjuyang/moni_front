@@ -140,6 +140,18 @@ class _StatsTabState extends State<StatsTab> {
         initial: _filter,
         users: _users,
         currentMonth: widget.currentMonth,
+        expenseCategories: widget.transactions
+            .where((t) => t.type == TransactionType.expense)
+            .map((t) => t.category)
+            .toSet()
+            .toList()
+          ..sort(),
+        incomeCategories: widget.transactions
+            .where((t) => t.type == TransactionType.income)
+            .map((t) => t.category)
+            .toSet()
+            .toList()
+          ..sort(),
       ),
     );
     if (result != null && mounted) {
@@ -350,11 +362,15 @@ class _FilterSheet extends StatefulWidget {
   final _FilterConfig initial;
   final List<UserModel> users;
   final DateTime currentMonth;
+  final List<String> expenseCategories;
+  final List<String> incomeCategories;
 
   const _FilterSheet({
     required this.initial,
     required this.users,
     required this.currentMonth,
+    required this.expenseCategories,
+    required this.incomeCategories,
   });
 
   @override
@@ -596,14 +612,20 @@ class _FilterSheetState extends State<_FilterSheet> {
                   ],
 
                   // ── 카테고리 제외 ─────────────────────────────
-                  const SizedBox(height: 20),
-                  _sectionLabel('카테고리 제외'),
-                  _subLabel('지출'),
-                  _categoryChips(expenseCategories),
-                  const SizedBox(height: 12),
-                  _subLabel('수입'),
-                  _categoryChips(incomeCategories),
-                  const SizedBox(height: 20),
+                  if (widget.expenseCategories.isNotEmpty || widget.incomeCategories.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    _sectionLabel('카테고리 제외'),
+                    if (widget.expenseCategories.isNotEmpty) ...[
+                      _subLabel('지출'),
+                      _categoryChips(widget.expenseCategories),
+                    ],
+                    if (widget.incomeCategories.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      _subLabel('수입'),
+                      _categoryChips(widget.incomeCategories),
+                    ],
+                    const SizedBox(height: 20),
+                  ],
                 ],
               ),
             ),

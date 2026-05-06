@@ -5,7 +5,8 @@ import '../utils/formatters.dart';
 import '../widgets/calculator_widget.dart';
 
 class AssetSettingsScreen extends StatefulWidget {
-  const AssetSettingsScreen({super.key});
+  final int ledgerId;
+  const AssetSettingsScreen({super.key, required this.ledgerId});
 
   @override
   State<AssetSettingsScreen> createState() => _AssetSettingsScreenState();
@@ -23,7 +24,7 @@ class _AssetSettingsScreenState extends State<AssetSettingsScreen> {
 
   Future<void> _load() async {
     try {
-      final assets = await AssetService.fetchAssets(ledgerId: 1);
+      final assets = await AssetService.fetchAssets(ledgerId: widget.ledgerId);
       if (mounted) setState(() { _assets = assets; _isLoading = false; });
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
@@ -43,7 +44,7 @@ class _AssetSettingsScreenState extends State<AssetSettingsScreen> {
         onSave: (name, type, balance) async {
           if (editing == null) {
             final created = await AssetService.createAsset(
-              ledgerId: 1,
+              ledgerId: widget.ledgerId,
               assetName: name,
               assetType: type,
               balance: balance,
@@ -51,7 +52,7 @@ class _AssetSettingsScreenState extends State<AssetSettingsScreen> {
             setState(() => _assets.add(created));
           } else {
             final updated = await AssetService.updateAsset(
-              ledgerId: 1,
+              ledgerId: widget.ledgerId,
               assetId: editing.assetId,
               assetName: name,
               assetType: type,
@@ -76,7 +77,7 @@ class _AssetSettingsScreenState extends State<AssetSettingsScreen> {
     setState(() => _assets = updated);
     try {
       await AssetService.reorderAssets(
-        ledgerId: 1,
+        ledgerId: widget.ledgerId,
         orderedIds: updated.map((a) => a.assetId).toList(),
       );
     } catch (_) {
@@ -104,7 +105,7 @@ class _AssetSettingsScreenState extends State<AssetSettingsScreen> {
     if (confirmed != true || !mounted) return;
 
     try {
-      await AssetService.deleteAsset(ledgerId: 1, assetId: asset.assetId);
+      await AssetService.deleteAsset(ledgerId: widget.ledgerId, assetId: asset.assetId);
       setState(() => _assets.removeWhere((a) => a.assetId == asset.assetId));
     } catch (e) {
       if (mounted) {

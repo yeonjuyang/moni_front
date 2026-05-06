@@ -2,18 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import 'home_screen.dart';
+import 'ledger_create_screen.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
+
+  Future<void> _navigateAfterLogin(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    final ledgerId = prefs.getInt('last_ledger_id');
+    if (!context.mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ledgerId != null
+            ? HomeScreen(ledgerId: ledgerId)
+            : const LedgerCreateScreen(),
+      ),
+    );
+  }
 
   Future<void> _loginWithKakao(BuildContext context) async {
     try {
       await AuthService.loginWithKakao();
       if (!context.mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
+      await _navigateAfterLogin(context);
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -26,10 +38,7 @@ class LoginScreen extends StatelessWidget {
     try {
       await AuthService.loginWithNaver();
       if (!context.mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
+      await _navigateAfterLogin(context);
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -38,17 +47,12 @@ class LoginScreen extends StatelessWidget {
     }
   }
 
-  // 카카오, 애플은 추후 구현
   Future<void> _loginPlaceholder(BuildContext context, String provider) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('is_logged_in', true);
     await prefs.setString('login_provider', provider);
-
     if (!context.mounted) return;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
-    );
+    await _navigateAfterLogin(context);
   }
 
   @override

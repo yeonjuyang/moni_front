@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
+import 'ledger_create_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -44,14 +45,23 @@ class _SplashScreenState extends State<SplashScreen>
 
     final prefs = results[0] as SharedPreferences;
     final isLoggedIn = prefs.getBool('is_logged_in') ?? false;
+    final lastLedgerId = prefs.getInt('last_ledger_id');
 
     if (!mounted) return;
+
+    final Widget destination;
+    if (!isLoggedIn) {
+      destination = const LoginScreen();
+    } else if (lastLedgerId == null) {
+      destination = const LedgerCreateScreen();
+    } else {
+      destination = HomeScreen(ledgerId: lastLedgerId);
+    }
 
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            isLoggedIn ? const HomeScreen() : const LoginScreen(),
+        pageBuilder: (context, animation, secondaryAnimation) => destination,
         transitionsBuilder: (context, animation, secondaryAnimation, child) =>
             FadeTransition(opacity: animation, child: child),
         transitionDuration: const Duration(milliseconds: 400),

@@ -44,9 +44,6 @@ class Transaction {
   }
 }
 
-const List<String> expenseCategories = ['식비', '카페', '교통', '쇼핑', '구독', '의료', '주거', '기타'];
-const List<String> incomeCategories = ['급여', '부업', '용돈', '기타'];
-
 const Map<String, IconData> categoryIcons = {
   '식비': Icons.restaurant_outlined,
   '카페': Icons.coffee_outlined,

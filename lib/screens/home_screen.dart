@@ -6,7 +6,8 @@ import 'tabs/stats_tab.dart';
 import 'tabs/settings_tab.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final int ledgerId;
+  const HomeScreen({super.key, required this.ledgerId});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -26,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadTransactions() async {
     try {
-      final transactions = await TransactionService.fetchTransactions(ledgerId: 1);
+      final transactions = await TransactionService.fetchTransactions(ledgerId: widget.ledgerId);
       setState(() {
         _transactions = transactions;
         _isLoading = false;
@@ -70,6 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final tabs = [
       LedgerTab(
+        ledgerId: widget.ledgerId,
         currentMonth: _currentMonth,
         transactions: _transactions,
         onMonthChanged: _changeMonth,
@@ -82,7 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
         transactions: _transactions,
         onMonthChanged: _changeMonth,
       ),
-      const SettingsTab(),
+      SettingsTab(ledgerId: widget.ledgerId),
     ];
 
     return Scaffold(

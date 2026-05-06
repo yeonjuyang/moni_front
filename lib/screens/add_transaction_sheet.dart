@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import '../models/asset.dart';
+import '../models/category.dart';
 import '../models/transaction.dart';
 import '../services/asset_service.dart';
+import '../services/category_service.dart';
 import '../services/transaction_service.dart';
 import '../services/user_service.dart';
 import '../utils/formatters.dart';
 import '../widgets/calculator_widget.dart';
 
 class AddTransactionSheet extends StatefulWidget {
+  final int ledgerId;
   final DateTime initialDate;
   final ValueChanged<Transaction> onSave;
   final Transaction? editing;
@@ -15,6 +18,7 @@ class AddTransactionSheet extends StatefulWidget {
 
   const AddTransactionSheet({
     super.key,
+    required this.ledgerId,
     required this.initialDate,
     required this.onSave,
     this.editing,
@@ -31,7 +35,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   late int _amount;
   bool _showCalculator = false;
   bool _isSaving = false;
-  late String _selectedCategory;
+  String _selectedCategory = '';
   late DateTime _selectedDate;
 
   List<AssetModel> _assets = [];
@@ -42,6 +46,10 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   int? _selectedUserId;
   bool _isLoadingUsers = true;
   final _noteController = TextEditingController();
+
+  List<CategoryModel> _expenseCategories = [];
+  List<CategoryModel> _incomeCategories = [];
+  bool _isLoadingCategories = true;
 
   bool get _isEditing => widget.editing != null;
 
@@ -54,21 +62,17 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       _amount = e.amount;
       _selectedDate = e.date;
       _titleController.text = e.title;
-      final cats = e.type == TransactionType.expense
-          ? expenseCategories
-          : incomeCategories;
-      _selectedCategory =
-          cats.contains(e.category) ? e.category : cats.first;
+      _selectedCategory = e.category;
       _selectedUserId = e.paidByUserId;
       _noteController.text = e.note ?? '';
     } else {
       _type = TransactionType.expense;
       _amount = 0;
       _selectedDate = DateTime.now();
-      _selectedCategory = expenseCategories.first;
     }
     _loadAssets();
     _loadUsers();
+    _loadCategories();
   }
 
   @override
@@ -80,7 +84,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
 
   Future<void> _loadAssets() async {
     try {
-      final assets = await AssetService.fetchAssets(ledgerId: 1);
+      final assets = await AssetService.fetchAssets(ledgerId: widget.ledgerId);
       if (mounted) {
         setState(() {
           _assets = assets;
@@ -90,6 +94,25 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       }
     } catch (_) {
       if (mounted) setState(() => _isLoadingAssets = false);
+    }
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final cats = await CategoryService.fetchCategories(ledgerId: widget.ledgerId);
+      if (mounted) {
+        setState(() {
+          _expenseCategories = cats.where((c) => c.categoryType == 'EXPENSE').toList();
+          _incomeCategories = cats.where((c) => c.categoryType == 'INCOME').toList();
+          _isLoadingCategories = false;
+          if (!_isEditing && _selectedCategory.isEmpty) {
+            final defaults = _type == TransactionType.expense ? _expenseCategories : _incomeCategories;
+            if (defaults.isNotEmpty) _selectedCategory = defaults.first.categoryName;
+          }
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingCategories = false);
     }
   }
 
@@ -112,13 +135,14 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     }
   }
 
-  List<String> get _categories =>
-      _type == TransactionType.expense ? expenseCategories : incomeCategories;
+  List<CategoryModel> get _categories =>
+      _type == TransactionType.expense ? _expenseCategories : _incomeCategories;
 
   void _onTypeChanged(TransactionType type) {
     setState(() {
       _type = type;
-      _selectedCategory = _categories.first;
+      final cats = type == TransactionType.expense ? _expenseCategories : _incomeCategories;
+      _selectedCategory = cats.isNotEmpty ? cats.first.categoryName : '';
     });
   }
 
@@ -164,7 +188,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       final Transaction saved;
       if (_isEditing) {
         saved = await TransactionService.updateTransaction(
-          ledgerId: 1,
+          ledgerId: widget.ledgerId,
           transactionId: widget.editing!.id,
           transaction: draft,
           fromAssetId: _type == TransactionType.expense ? _selectedAssetId : null,
@@ -172,7 +196,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         );
       } else {
         saved = await TransactionService.createTransaction(
-          ledgerId: 1,
+          ledgerId: widget.ledgerId,
           transaction: draft,
           fromAssetId: _type == TransactionType.expense ? _selectedAssetId : null,
           toAssetId: _type == TransactionType.income ? _selectedAssetId : null,
@@ -216,7 +240,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     setState(() => _isSaving = true);
     try {
       await TransactionService.deleteTransaction(
-        ledgerId: 1,
+        ledgerId: widget.ledgerId,
         transactionId: widget.editing!.id,
       );
       widget.onDelete?.call();
@@ -395,17 +419,37 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             const Text('카테고리',
                 style: TextStyle(fontSize: 13, color: Colors.black54)),
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: _categories.map((c) {
-                return ChoiceChip(
-                  label: Text(c),
-                  selected: _selectedCategory == c,
-                  onSelected: (_) => setState(() => _selectedCategory = c),
-                );
-              }).toList(),
-            ),
+            if (_isLoadingCategories)
+              const SizedBox(
+                height: 36,
+                child: Row(children: [
+                  SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2)),
+                  SizedBox(width: 8),
+                  Text('카테고리 불러오는 중...', style: TextStyle(color: Colors.black38)),
+                ]),
+              )
+            else if (_categories.isEmpty)
+              const Text('카테고리가 없어요. 설정에서 먼저 추가해주세요.',
+                  style: TextStyle(fontSize: 13, color: Colors.black38))
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: _categories.map((c) {
+                  final isSelected = _selectedCategory == c.categoryName;
+                  return ChoiceChip(
+                    avatar: Icon(c.icon, size: 14,
+                        color: isSelected ? null : c.color),
+                    label: Text(c.categoryName),
+                    selected: isSelected,
+                    onSelected: (_) =>
+                        setState(() => _selectedCategory = c.categoryName),
+                  );
+                }).toList(),
+              ),
             const SizedBox(height: 16),
 
             // 날짜

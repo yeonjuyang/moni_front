@@ -3,7 +3,8 @@ import '../models/category.dart';
 import '../services/category_service.dart';
 
 class CategorySettingsScreen extends StatefulWidget {
-  const CategorySettingsScreen({super.key});
+  final int ledgerId;
+  const CategorySettingsScreen({super.key, required this.ledgerId});
 
   @override
   State<CategorySettingsScreen> createState() => _CategorySettingsScreenState();
@@ -30,7 +31,7 @@ class _CategorySettingsScreenState extends State<CategorySettingsScreen>
 
   Future<void> _load() async {
     try {
-      final cats = await CategoryService.fetchCategories(ledgerId: 1);
+      final cats = await CategoryService.fetchCategories(ledgerId: widget.ledgerId);
       if (mounted) setState(() { _categories = cats; _isLoading = false; });
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
@@ -57,7 +58,7 @@ class _CategorySettingsScreenState extends State<CategorySettingsScreen>
         onSave: (name, iconName, iconColor) async {
           if (editing == null) {
             final created = await CategoryService.createCategory(
-              ledgerId: 1,
+              ledgerId: widget.ledgerId,
               categoryName: name,
               categoryType: type,
               iconName: iconName,
@@ -66,7 +67,7 @@ class _CategorySettingsScreenState extends State<CategorySettingsScreen>
             setState(() => _categories.add(created));
           } else {
             final updated = await CategoryService.updateCategory(
-              ledgerId: 1,
+              ledgerId: widget.ledgerId,
               categoryId: editing.categoryId,
               categoryName: name,
               categoryType: editing.categoryType,
@@ -104,7 +105,7 @@ class _CategorySettingsScreenState extends State<CategorySettingsScreen>
 
     try {
       await CategoryService.deleteCategory(
-          ledgerId: 1, categoryId: cat.categoryId);
+          ledgerId: widget.ledgerId, categoryId: cat.categoryId);
       setState(
           () => _categories.removeWhere((c) => c.categoryId == cat.categoryId));
     } catch (e) {

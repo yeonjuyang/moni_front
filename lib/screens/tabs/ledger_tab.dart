@@ -5,6 +5,7 @@ import '../../widgets/month_selector.dart';
 import '../add_transaction_sheet.dart';
 
 class LedgerTab extends StatefulWidget {
+  final int ledgerId;
   final DateTime currentMonth;
   final List<Transaction> transactions;
   final ValueChanged<DateTime> onMonthChanged;
@@ -14,6 +15,7 @@ class LedgerTab extends StatefulWidget {
 
   const LedgerTab({
     super.key,
+    required this.ledgerId,
     required this.currentMonth,
     required this.transactions,
     required this.onMonthChanged,
@@ -90,6 +92,7 @@ class _LedgerTabState extends State<LedgerTab> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => AddTransactionSheet(
+        ledgerId: widget.ledgerId,
         initialDate: _selectedDate ??
             DateTime(widget.currentMonth.year, widget.currentMonth.month),
         onSave: widget.onAddTransaction,
@@ -106,6 +109,7 @@ class _LedgerTabState extends State<LedgerTab> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => AddTransactionSheet(
+        ledgerId: widget.ledgerId,
         initialDate: transaction.date,
         editing: transaction,
         onSave: widget.onUpdateTransaction,
