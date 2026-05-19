@@ -12,6 +12,8 @@ class Transaction {
   final int? paidByUserId;
   final String? paidByUserNickname;
   final String? note;
+  final int? fromAssetId;
+  final int? toAssetId;
 
   const Transaction({
     required this.id,
@@ -23,6 +25,8 @@ class Transaction {
     this.paidByUserId,
     this.paidByUserNickname,
     this.note,
+    this.fromAssetId,
+    this.toAssetId,
   });
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
@@ -40,6 +44,12 @@ class Transaction {
           : null,
       paidByUserNickname: json['paidByUserNickname'] as String?,
       note: json['note'] as String?,
+      fromAssetId: json['fromAssetId'] != null
+          ? (json['fromAssetId'] as num).toInt()
+          : null,
+      toAssetId: json['toAssetId'] != null
+          ? (json['toAssetId'] as num).toInt()
+          : null,
     );
   }
 }

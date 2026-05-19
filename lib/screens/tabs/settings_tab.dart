@@ -5,6 +5,8 @@ import '../../services/auth_service.dart';
 import '../../services/ledger_service.dart';
 import '../asset_settings_screen.dart';
 import '../category_settings_screen.dart';
+import '../ledger_onboarding_screen.dart';
+import '../ledger_list_screen.dart';
 import '../ledger_settings_screen.dart';
 import '../login_screen.dart';
 
@@ -45,6 +47,29 @@ class _SettingsTabState extends State<SettingsTab> {
       ),
     );
     if (updated != null) setState(() => _ledger = updated);
+  }
+
+  Future<void> _switchLedger(BuildContext context) async {
+    try {
+      final ledgers = await LedgerService.fetchMyLedgers();
+      if (!context.mounted) return;
+      if (ledgers.isEmpty) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const LedgerOnboardingScreen()),
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => LedgerListScreen(ledgers: ledgers)),
+        );
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('가계부 목록을 불러오지 못했습니다: $e')),
+      );
+    }
   }
 
   Future<void> _logout(BuildContext context) async {
@@ -127,6 +152,12 @@ class _SettingsTabState extends State<SettingsTab> {
                 builder: (_) => AssetSettingsScreen(ledgerId: widget.ledgerId),
               ),
             ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.swap_horiz_outlined),
+            title: const Text('가계부 전환'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _switchLedger(context),
           ),
           const Divider(),
           ListTile(

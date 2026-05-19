@@ -88,7 +88,15 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       if (mounted) {
         setState(() {
           _assets = assets;
-          if (assets.isNotEmpty) _selectedAssetId = assets.first.assetId;
+          if (_isEditing) {
+            final e = widget.editing!;
+            final originalId = e.type == TransactionType.expense
+                ? e.fromAssetId
+                : e.toAssetId;
+            _selectedAssetId = originalId ?? (assets.isNotEmpty ? assets.first.assetId : null);
+          } else {
+            if (assets.isNotEmpty) _selectedAssetId = assets.first.assetId;
+          }
           _isLoadingAssets = false;
         });
       }

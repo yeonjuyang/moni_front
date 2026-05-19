@@ -78,6 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onAddTransaction: _addTransaction,
         onUpdateTransaction: _updateTransaction,
         onDeleteTransaction: _deleteTransaction,
+        onRefresh: _loadTransactions,
       ),
       StatsTab(
         currentMonth: _currentMonth,

@@ -3,6 +3,13 @@ import '../models/ledger.dart';
 import 'api_client.dart';
 
 class LedgerService {
+  static Future<List<LedgerModel>> fetchMyLedgers() async {
+    final response = await ApiClient.dio.get('/api/ledgers');
+    return (response.data as List)
+        .map((json) => LedgerModel.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
   static Future<LedgerModel> getLedger(int ledgerId) async {
     final response = await ApiClient.dio.get('/api/ledgers/$ledgerId');
     return LedgerModel.fromJson(response.data as Map<String, dynamic>);
@@ -22,6 +29,25 @@ class LedgerService {
       'ledgerType': 'PERSONAL',
     });
     return LedgerModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  static Future<LedgerModel> generateInviteCode(int ledgerId) async {
+    final response = await ApiClient.dio.post('/api/ledgers/$ledgerId/invite');
+    return LedgerModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  static Future<LedgerModel> joinLedger(String inviteCode) async {
+    final response = await ApiClient.dio.post('/api/ledgers/join', data: {
+      'inviteCode': inviteCode,
+    });
+    return LedgerModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  static Future<void> deleteLedger(int ledgerId) async {
+    await ApiClient.dio.delete('/api/ledgers/$ledgerId');
+    final prefs = await SharedPreferences.getInstance();
+    final lastId = prefs.getInt('last_ledger_id');
+    if (lastId == ledgerId) await prefs.remove('last_ledger_id');
   }
 
   static Future<void> saveLastLedgerId(int ledgerId) async {

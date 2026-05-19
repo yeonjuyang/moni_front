@@ -1,24 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
+import '../services/ledger_service.dart';
 import 'home_screen.dart';
-import 'ledger_create_screen.dart';
+import 'ledger_onboarding_screen.dart';
+import 'ledger_list_screen.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
   Future<void> _navigateAfterLogin(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
-    final ledgerId = prefs.getInt('last_ledger_id');
-    if (!context.mounted) return;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ledgerId != null
-            ? HomeScreen(ledgerId: ledgerId)
-            : const LedgerCreateScreen(),
-      ),
-    );
+
+    try {
+      final ledgers = await LedgerService.fetchMyLedgers();
+      if (!context.mounted) return;
+
+      if (ledgers.isEmpty) {
+        Navigator.pushReplacement(context,
+            MaterialPageRoute(builder: (_) => const LedgerOnboardingScreen()));
+        return;
+      }
+
+      final lastId = prefs.getInt('last_ledger_id');
+      if (lastId != null && ledgers.any((l) => l.ledgerId == lastId)) {
+        Navigator.pushReplacement(context,
+            MaterialPageRoute(builder: (_) => HomeScreen(ledgerId: lastId)));
+      } else if (ledgers.length == 1) {
+        await LedgerService.saveLastLedgerId(ledgers.first.ledgerId);
+        if (!context.mounted) return;
+        Navigator.pushReplacement(context,
+            MaterialPageRoute(builder: (_) => HomeScreen(ledgerId: ledgers.first.ledgerId)));
+      } else {
+        Navigator.pushReplacement(context,
+            MaterialPageRoute(builder: (_) => LedgerListScreen(ledgers: ledgers)));
+      }
+    } catch (_) {
+      if (!context.mounted) return;
+      Navigator.pushReplacement(context,
+          MaterialPageRoute(builder: (_) => const LedgerOnboardingScreen()));
+    }
   }
 
   Future<void> _loginWithKakao(BuildContext context) async {

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/ledger.dart';
 import '../services/ledger_service.dart';
+import 'ledger_onboarding_screen.dart';
+import 'ledger_list_screen.dart';
 
 class LedgerSettingsScreen extends StatefulWidget {
   final LedgerModel ledger;
@@ -12,12 +15,16 @@ class LedgerSettingsScreen extends StatefulWidget {
 
 class _LedgerSettingsScreenState extends State<LedgerSettingsScreen> {
   late final TextEditingController _nameController;
+  late LedgerModel _ledger;
   bool _isSaving = false;
+  bool _isGenerating = false;
+  bool _isDeleting = false;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.ledger.ledgerName);
+    _ledger = widget.ledger;
+    _nameController = TextEditingController(text: _ledger.ledgerName);
   }
 
   @override
@@ -32,23 +39,101 @@ class _LedgerSettingsScreenState extends State<LedgerSettingsScreen> {
     setState(() => _isSaving = true);
     try {
       final updated = await LedgerService.updateLedger(
-        ledgerId: widget.ledger.ledgerId,
+        ledgerId: _ledger.ledgerId,
         ledgerName: name,
       );
       if (!mounted) return;
+      setState(() => _ledger = updated);
       Navigator.pop(context, updated);
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('저장 실패: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('저장 실패: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
   }
 
+  Future<void> _deleteLedger() async {
+    setState(() => _isDeleting = true);
+    try {
+      await LedgerService.deleteLedger(_ledger.ledgerId);
+      if (!mounted) return;
+      final ledgers = await LedgerService.fetchMyLedgers();
+      if (!mounted) return;
+      if (ledgers.isEmpty) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const LedgerOnboardingScreen()),
+          (_) => false,
+        );
+      } else {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => LedgerListScreen(ledgers: ledgers)),
+          (_) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('삭제 실패: $e')));
+        setState(() => _isDeleting = false);
+      }
+    }
+  }
+
+  void _confirmDelete() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('가계부 삭제'),
+        content: Text('"${_ledger.ledgerName}" 가계부를 삭제하시겠어요?\n모든 거래 내역이 사라집니다.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _deleteLedger();
+            },
+            child: const Text('삭제'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _generateInviteCode() async {
+    setState(() => _isGenerating = true);
+    try {
+      final updated = await LedgerService.generateInviteCode(_ledger.ledgerId);
+      if (mounted) setState(() => _ledger = updated);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('코드 생성 실패: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isGenerating = false);
+    }
+  }
+
+  void _copyCode(String code) {
+    Clipboard.setData(ClipboardData(text: code));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('초대 코드가 복사됐어요'), duration: Duration(seconds: 2)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final code = _ledger.inviteCode;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('가계부 설정'),
@@ -57,10 +142,8 @@ class _LedgerSettingsScreenState extends State<LedgerSettingsScreen> {
             onPressed: _isSaving ? null : _save,
             child: _isSaving
                 ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
+                    width: 16, height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2))
                 : const Text('저장'),
           ),
         ],
@@ -76,6 +159,83 @@ class _LedgerSettingsScreenState extends State<LedgerSettingsScreen> {
             ),
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => _save(),
+          ),
+          const SizedBox(height: 24),
+          const Text('초대 코드',
+              style: TextStyle(fontSize: 13, color: Colors.black54, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          if (code != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      code,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 6,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.copy_outlined),
+                    onPressed: () => _copyCode(code),
+                    tooltip: '복사',
+                  ),
+                ],
+              ),
+            )
+          else
+            Text(
+              '아직 초대 코드가 없어요',
+              style: TextStyle(color: Colors.black38, fontSize: 14),
+            ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _isGenerating ? null : _generateInviteCode,
+            icon: _isGenerating
+                ? const SizedBox(
+                    width: 16, height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.refresh),
+            label: Text(code != null ? '코드 재생성' : '초대 코드 생성'),
+          ),
+          if (code != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              '코드를 재생성하면 기존 코드는 사용할 수 없어요.',
+              style: TextStyle(fontSize: 12, color: Colors.black38),
+            ),
+          ],
+          const SizedBox(height: 32),
+          const Divider(),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: _isDeleting ? null : _confirmDelete,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red,
+                side: const BorderSide(color: Colors.red),
+                minimumSize: const Size(double.infinity, 48),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: _isDeleting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.red))
+                  : const Text('가계부 삭제'),
+            ),
           ),
         ],
       ),

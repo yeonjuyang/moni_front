@@ -12,6 +12,7 @@ class LedgerTab extends StatefulWidget {
   final ValueChanged<Transaction> onAddTransaction;
   final ValueChanged<Transaction> onUpdateTransaction;
   final ValueChanged<String> onDeleteTransaction;
+  final Future<void> Function() onRefresh;
 
   const LedgerTab({
     super.key,
@@ -22,6 +23,7 @@ class LedgerTab extends StatefulWidget {
     required this.onAddTransaction,
     required this.onUpdateTransaction,
     required this.onDeleteTransaction,
+    required this.onRefresh,
   });
 
   @override
@@ -137,7 +139,9 @@ class _LedgerTabState extends State<LedgerTab> {
         children: [
           _SummaryCard(income: _totalIncome, expense: _totalExpense),
           Expanded(
-            child: CustomScrollView(
+            child: RefreshIndicator(
+              onRefresh: widget.onRefresh,
+              child: CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(
                   child: _CalendarSection(
@@ -188,6 +192,7 @@ class _LedgerTabState extends State<LedgerTab> {
                     ),
                   ),
               ],
+            ),
             ),
           ),
         ],

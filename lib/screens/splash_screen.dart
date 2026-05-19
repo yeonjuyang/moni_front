@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/ledger.dart';
+import '../services/ledger_service.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
-import 'ledger_create_screen.dart';
+import 'ledger_onboarding_screen.dart';
+import 'ledger_list_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -37,27 +40,44 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _checkAndNavigate() async {
-    // 애니메이션과 로그인 확인을 동시에 진행
+    final prefs = await SharedPreferences.getInstance();
+    final isLoggedIn = prefs.getBool('is_logged_in') ?? false;
+
+    if (!isLoggedIn) {
+      await Future.delayed(const Duration(milliseconds: 1500));
+      if (!mounted) return;
+      _navigate(const LoginScreen());
+      return;
+    }
+
+    // 애니메이션과 API 호출을 동시에 실행
     final results = await Future.wait([
-      SharedPreferences.getInstance(),
+      LedgerService.fetchMyLedgers().catchError((_) => <LedgerModel>[]),
       Future.delayed(const Duration(milliseconds: 1500)),
     ]);
 
-    final prefs = results[0] as SharedPreferences;
-    final isLoggedIn = prefs.getBool('is_logged_in') ?? false;
-    final lastLedgerId = prefs.getInt('last_ledger_id');
-
     if (!mounted) return;
 
-    final Widget destination;
-    if (!isLoggedIn) {
-      destination = const LoginScreen();
-    } else if (lastLedgerId == null) {
-      destination = const LedgerCreateScreen();
-    } else {
-      destination = HomeScreen(ledgerId: lastLedgerId);
+    final ledgers = results[0] as List<LedgerModel>;
+
+    if (ledgers.isEmpty) {
+      _navigate(const LedgerOnboardingScreen());
+      return;
     }
 
+    final lastId = prefs.getInt('last_ledger_id');
+    if (lastId != null && ledgers.any((l) => l.ledgerId == lastId)) {
+      _navigate(HomeScreen(ledgerId: lastId));
+    } else if (ledgers.length == 1) {
+      await LedgerService.saveLastLedgerId(ledgers.first.ledgerId);
+      if (!mounted) return;
+      _navigate(HomeScreen(ledgerId: ledgers.first.ledgerId));
+    } else {
+      _navigate(LedgerListScreen(ledgers: ledgers));
+    }
+  }
+
+  void _navigate(Widget destination) {
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
