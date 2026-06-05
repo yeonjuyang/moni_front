@@ -15,6 +15,7 @@ class LedgerSettingsScreen extends StatefulWidget {
 
 class _LedgerSettingsScreenState extends State<LedgerSettingsScreen> {
   late final TextEditingController _nameController;
+  late final TextEditingController _nicknameController;
   late LedgerModel _ledger;
   bool _isSaving = false;
   bool _isGenerating = false;
@@ -25,11 +26,26 @@ class _LedgerSettingsScreenState extends State<LedgerSettingsScreen> {
     super.initState();
     _ledger = widget.ledger;
     _nameController = TextEditingController(text: _ledger.ledgerName);
+    _nicknameController = TextEditingController(text: _ledger.myNickname ?? '');
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final fresh = await LedgerService.getLedger(_ledger.ledgerId);
+      if (!mounted) return;
+      setState(() {
+        _ledger = fresh;
+        _nameController.text = fresh.ledgerName;
+        _nicknameController.text = fresh.myNickname ?? '';
+      });
+    } catch (_) {}
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _nicknameController.dispose();
     super.dispose();
   }
 
@@ -38,13 +54,21 @@ class _LedgerSettingsScreenState extends State<LedgerSettingsScreen> {
     if (name.isEmpty) return;
     setState(() => _isSaving = true);
     try {
-      final updated = await LedgerService.updateLedger(
-        ledgerId: _ledger.ledgerId,
-        ledgerName: name,
-      );
+      await Future.wait([
+        LedgerService.updateLedger(
+          ledgerId: _ledger.ledgerId,
+          ledgerName: name,
+        ),
+        LedgerService.updateMyNickname(
+          ledgerId: _ledger.ledgerId,
+          nickname: _nicknameController.text.trim(),
+        ),
+      ]);
       if (!mounted) return;
-      setState(() => _ledger = updated);
-      Navigator.pop(context, updated);
+      final fresh = await LedgerService.getLedger(_ledger.ledgerId);
+      if (!mounted) return;
+      setState(() => _ledger = fresh);
+      Navigator.pop(context, fresh);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -136,108 +160,118 @@ class _LedgerSettingsScreenState extends State<LedgerSettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('가계부 설정'),
-        actions: [
-          TextButton(
-            onPressed: _isSaving ? null : _save,
-            child: _isSaving
-                ? const SizedBox(
-                    width: 16, height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-                : const Text('저장'),
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          TextField(
-            controller: _nameController,
-            decoration: const InputDecoration(
-              labelText: '가계부 이름',
-              border: OutlineInputBorder(),
-            ),
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => _save(),
-          ),
-          const SizedBox(height: 24),
-          const Text('초대 코드',
-              style: TextStyle(fontSize: 13, color: Colors.black54, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          if (code != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      code,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 6,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.copy_outlined),
-                    onPressed: () => _copyCode(code),
-                    tooltip: '복사',
-                  ),
-                ],
-              ),
-            )
-          else
-            Text(
-              '아직 초대 코드가 없어요',
-              style: TextStyle(color: Colors.black38, fontSize: 14),
-            ),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: _isGenerating ? null : _generateInviteCode,
-            icon: _isGenerating
-                ? const SizedBox(
-                    width: 16, height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.refresh),
-            label: Text(code != null ? '코드 재생성' : '초대 코드 생성'),
-          ),
-          if (code != null) ...[
-            const SizedBox(height: 6),
-            Text(
-              '코드를 재생성하면 기존 코드는 사용할 수 없어요.',
-              style: TextStyle(fontSize: 12, color: Colors.black38),
+          title: const Text('가계부 설정'),
+          actions: [
+            TextButton(
+              onPressed: _isSaving ? null : _save,
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 16, height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Text('저장'),
             ),
           ],
-          const SizedBox(height: 32),
-          const Divider(),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: _isDeleting ? null : _confirmDelete,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.red,
-                side: const BorderSide(color: Colors.red),
-                minimumSize: const Size(double.infinity, 48),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+        ),
+        body: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            TextField(
+              controller: _nameController,
+              decoration: const InputDecoration(
+                labelText: '가계부 이름',
+                border: OutlineInputBorder(),
               ),
-              child: _isDeleting
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.red))
-                  : const Text('가계부 삭제'),
+              textInputAction: TextInputAction.next,
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            TextField(
+              controller: _nicknameController,
+              decoration: const InputDecoration(
+                labelText: '이 가계부에서 내 이름',
+                hintText: '비워두면 기본 닉네임 사용',
+                border: OutlineInputBorder(),
+              ),
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _save(),
+            ),
+            const SizedBox(height: 24),
+            const Text('초대 코드',
+                style: TextStyle(fontSize: 13, color: Colors.black54, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            if (code != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        code,
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 6,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.copy_outlined),
+                      onPressed: () => _copyCode(code),
+                      tooltip: '복사',
+                    ),
+                  ],
+                ),
+              )
+            else
+              Text(
+                '아직 초대 코드가 없어요',
+                style: TextStyle(color: Colors.black38, fontSize: 14),
+              ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _isGenerating ? null : _generateInviteCode,
+              icon: _isGenerating
+                  ? const SizedBox(
+                      width: 16, height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.refresh),
+              label: Text(code != null ? '코드 재생성' : '초대 코드 생성'),
+            ),
+            if (code != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                '코드를 재생성하면 기존 코드는 사용할 수 없어요.',
+                style: TextStyle(fontSize: 12, color: Colors.black38),
+              ),
+            ],
+            const SizedBox(height: 32),
+            const Divider(),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: _isDeleting ? null : _confirmDelete,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  side: const BorderSide(color: Colors.red),
+                  minimumSize: const Size(double.infinity, 48),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                child: _isDeleting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.red))
+                    : const Text('가계부 삭제'),
+              ),
+            ),
+          ],
       ),
     );
   }

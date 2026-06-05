@@ -1,0 +1,243 @@
+import 'package:flutter/material.dart';
+import '../../models/asset.dart';
+import '../../services/asset_service.dart';
+import '../../utils/formatters.dart';
+import '../asset_settings_screen.dart';
+
+class AssetTab extends StatefulWidget {
+  final int ledgerId;
+
+  const AssetTab({super.key, required this.ledgerId});
+
+  @override
+  State<AssetTab> createState() => _AssetTabState();
+}
+
+class _AssetTabState extends State<AssetTab> {
+  List<AssetModel> _assets = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final assets = await AssetService.fetchAssets(ledgerId: widget.ledgerId);
+      if (!mounted) return;
+      setState(() {
+        _assets = assets;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('자산을 불러오지 못했습니다: $e')));
+    }
+  }
+
+  int get _totalBalance => _assets.fold(0, (s, a) => s + a.balance);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF8F9FA),
+        title: const Text('자산', style: TextStyle(fontWeight: FontWeight.w700)),
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.tune_outlined),
+            tooltip: '자산 관리',
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      AssetSettingsScreen(ledgerId: widget.ledgerId),
+                ),
+              );
+              _load();
+            },
+          ),
+        ],
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: _assets.isEmpty
+                  ? ListView(
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.5,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.account_balance_wallet_outlined,
+                                  size: 56,
+                                  color: Colors.black.withValues(alpha: 0.15)),
+                              const SizedBox(height: 12),
+                              const Text('자산이 없어요',
+                                  style: TextStyle(
+                                      color: Colors.black38, fontSize: 15)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+                      children: [
+                        _TotalBalanceCard(totalBalance: _totalBalance),
+                        const SizedBox(height: 20),
+                        ..._buildGroupedAssets(context),
+                      ],
+                    ),
+            ),
+    );
+  }
+
+  List<Widget> _buildGroupedAssets(BuildContext context) {
+    final grouped = <String, List<AssetModel>>{};
+    for (final a in _assets) {
+      grouped.putIfAbsent(a.assetType, () => []).add(a);
+    }
+
+    final order = ['BANK', 'CASH', 'CARD', 'OTHER'];
+    final sortedTypes = grouped.keys.toList()
+      ..sort((a, b) => order.indexOf(a).compareTo(order.indexOf(b)));
+
+    final widgets = <Widget>[];
+    for (final type in sortedTypes) {
+      final list = grouped[type]!;
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 10),
+          child: Text(
+            assetTypeLabels[type] ?? type,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+          ),
+        ),
+      );
+      widgets.add(
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              for (int i = 0; i < list.length; i++) ...[
+                _AssetRow(asset: list[i]),
+                if (i < list.length - 1)
+                  const Divider(height: 1, indent: 60, endIndent: 16),
+              ],
+            ],
+          ),
+        ),
+      );
+      widgets.add(const SizedBox(height: 20));
+    }
+    return widgets;
+  }
+}
+
+class _TotalBalanceCard extends StatelessWidget {
+  final int totalBalance;
+
+  const _TotalBalanceCard({required this.totalBalance});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF4361EE), Color(0xFF7209B7)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF4361EE).withValues(alpha: 0.35),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '총 자산',
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.white.withValues(alpha: 0.65),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${formatCurrency(totalBalance)}원',
+            style: const TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AssetRow extends StatelessWidget {
+  final AssetModel asset;
+
+  const _AssetRow({required this.asset});
+
+  @override
+  Widget build(BuildContext context) {
+    const color = Color(0xFF4361EE);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(asset.icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              asset.assetName,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+            ),
+          ),
+          Text(
+            '${formatCurrency(asset.balance)}원',
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+    );
+  }
+}

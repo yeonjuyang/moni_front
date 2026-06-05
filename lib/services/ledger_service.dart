@@ -31,6 +31,13 @@ class LedgerService {
     return LedgerModel.fromJson(response.data as Map<String, dynamic>);
   }
 
+  static Future<LedgerModel> updateMyNickname({required int ledgerId, required String nickname}) async {
+    final response = await ApiClient.dio.put('/api/ledgers/$ledgerId/me', data: {
+      'nickname': nickname,
+    });
+    return LedgerModel.fromJson(response.data as Map<String, dynamic>);
+  }
+
   static Future<LedgerModel> generateInviteCode(int ledgerId) async {
     final response = await ApiClient.dio.post('/api/ledgers/$ledgerId/invite');
     return LedgerModel.fromJson(response.data as Map<String, dynamic>);

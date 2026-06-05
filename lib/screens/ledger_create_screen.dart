@@ -11,11 +11,13 @@ class LedgerCreateScreen extends StatefulWidget {
 
 class _LedgerCreateScreenState extends State<LedgerCreateScreen> {
   final _nameController = TextEditingController();
+  final _nicknameController = TextEditingController();
   bool _isSaving = false;
 
   @override
   void dispose() {
     _nameController.dispose();
+    _nicknameController.dispose();
     super.dispose();
   }
 
@@ -26,6 +28,11 @@ class _LedgerCreateScreenState extends State<LedgerCreateScreen> {
     setState(() => _isSaving = true);
     try {
       final ledger = await LedgerService.createLedger(ledgerName: name);
+      final nickname = _nicknameController.text.trim();
+      if (nickname.isNotEmpty) {
+        await LedgerService.updateMyNickname(
+            ledgerId: ledger.ledgerId, nickname: nickname);
+      }
       await LedgerService.saveLastLedgerId(ledger.ledgerId);
       if (!mounted) return;
       Navigator.pushReplacement(
@@ -82,6 +89,16 @@ class _LedgerCreateScreenState extends State<LedgerCreateScreen> {
                     decoration: const InputDecoration(
                       labelText: '가계부 이름',
                       hintText: '예) 우리집 가계부',
+                      border: OutlineInputBorder(),
+                    ),
+                    textInputAction: TextInputAction.next,
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _nicknameController,
+                    decoration: const InputDecoration(
+                      labelText: '이 가계부에서 내 이름',
+                      hintText: '예) 홍길동',
                       border: OutlineInputBorder(),
                     ),
                     textInputAction: TextInputAction.done,

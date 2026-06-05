@@ -3,7 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/ledger.dart';
 import '../../services/auth_service.dart';
 import '../../services/ledger_service.dart';
-import '../asset_settings_screen.dart';
 import '../category_settings_screen.dart';
 import '../ledger_onboarding_screen.dart';
 import '../ledger_list_screen.dart';
@@ -139,17 +138,6 @@ class _SettingsTabState extends State<SettingsTab> {
               context,
               MaterialPageRoute(
                 builder: (_) => CategorySettingsScreen(ledgerId: widget.ledgerId),
-              ),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.account_balance_wallet_outlined),
-            title: const Text('자산 설정'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => AssetSettingsScreen(ledgerId: widget.ledgerId),
               ),
             ),
           ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/transaction.dart';
 import '../services/transaction_service.dart';
 import 'tabs/ledger_tab.dart';
+import 'tabs/asset_tab.dart';
 import 'tabs/stats_tab.dart';
 import 'tabs/settings_tab.dart';
 
@@ -80,7 +81,9 @@ class _HomeScreenState extends State<HomeScreen> {
         onDeleteTransaction: _deleteTransaction,
         onRefresh: _loadTransactions,
       ),
+      AssetTab(ledgerId: widget.ledgerId),
       StatsTab(
+        ledgerId: widget.ledgerId,
         currentMonth: _currentMonth,
         transactions: _transactions,
         onMonthChanged: _changeMonth,
@@ -98,6 +101,11 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.book_outlined),
             selectedIcon: Icon(Icons.book),
             label: '가계부',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.account_balance_wallet_outlined),
+            selectedIcon: Icon(Icons.account_balance_wallet),
+            label: '자산',
           ),
           NavigationDestination(
             icon: Icon(Icons.bar_chart_outlined),

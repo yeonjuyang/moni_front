@@ -1,9 +1,12 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../../models/category.dart';
 import '../../models/transaction.dart';
+import '../../services/category_service.dart';
 import '../../services/user_service.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/month_selector.dart';
+import '../category_detail_screen.dart';
 
 // ── Filter config ─────────────────────────────────────────────────────────────
 
@@ -33,12 +36,14 @@ class _FilterConfig {
 // ── StatsTab ──────────────────────────────────────────────────────────────────
 
 class StatsTab extends StatefulWidget {
+  final int ledgerId;
   final DateTime currentMonth;
   final List<Transaction> transactions;
   final ValueChanged<DateTime> onMonthChanged;
 
   const StatsTab({
     super.key,
+    required this.ledgerId,
     required this.currentMonth,
     required this.transactions,
     required this.onMonthChanged,
@@ -52,19 +57,33 @@ class _StatsTabState extends State<StatsTab> {
   TransactionType _selectedType = TransactionType.expense;
   _FilterConfig _filter = _FilterConfig.empty;
   List<UserModel> _users = [];
+  Map<String, CategoryModel> _categories = {};
 
   @override
   void initState() {
     super.initState();
-    _loadUsers();
+    _loadData();
   }
 
-  Future<void> _loadUsers() async {
+  Future<void> _loadData() async {
     try {
-      final users = await UserService.fetchUsers();
-      if (mounted) setState(() => _users = users);
+      final usersFut = UserService.fetchUsers();
+      final catsFut = CategoryService.fetchCategories(ledgerId: widget.ledgerId);
+      final users = await usersFut;
+      final cats = await catsFut;
+      if (!mounted) return;
+      setState(() {
+        _users = users;
+        _categories = {for (final c in cats) c.categoryName: c};
+      });
     } catch (_) {}
   }
+
+  Color _catColor(String cat) =>
+      _categories[cat]?.color ?? categoryColors[cat] ?? Colors.grey;
+
+  IconData _catIcon(String cat) =>
+      _categories[cat]?.icon ?? categoryIcons[cat] ?? Icons.more_horiz;
 
   List<Transaction> get _baseTransactions {
     var list = widget.transactions;
@@ -122,6 +141,16 @@ class _StatsTabState extends State<StatsTab> {
       .where((t) => t.type == TransactionType.expense)
       .fold(0, (s, t) => s + t.amount);
 
+  Map<String, int> _userMap(TransactionType type) {
+    final map = <String, int>{};
+    for (final t in _baseTransactions.where((t) => t.type == type)) {
+      final name = t.paidByUserNickname ?? '알 수 없음';
+      map[name] = (map[name] ?? 0) + t.amount;
+    }
+    return Map.fromEntries(
+        map.entries.toList()..sort((a, b) => b.value.compareTo(a.value)));
+  }
+
   Map<String, int> _categoryMap(TransactionType type) {
     final map = <String, int>{};
     for (final t in _baseTransactions.where((t) => t.type == type)) {
@@ -129,6 +158,25 @@ class _StatsTabState extends State<StatsTab> {
     }
     return Map.fromEntries(
         map.entries.toList()..sort((a, b) => b.value.compareTo(a.value)));
+  }
+
+  void _openCategoryDetail(String category) {
+    final transactions = widget.transactions
+        .where((t) => t.type == _selectedType && t.category == category)
+        .toList();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CategoryDetailScreen(
+          category: category,
+          type: _selectedType,
+          transactions: transactions,
+          initialMonth: widget.currentMonth,
+          categoryColor: _catColor(category),
+          categoryIcon: _catIcon(category),
+        ),
+      ),
+    );
   }
 
   Future<void> _openFilter() async {
@@ -242,6 +290,8 @@ class _StatsTabState extends State<StatsTab> {
     final catMap = _categoryMap(_selectedType);
     final total =
         _selectedType == TransactionType.expense ? _totalExpense : _totalIncome;
+    final colorMap = {for (final cat in catMap.keys) cat: _catColor(cat)};
+    final iconMap = {for (final cat in catMap.keys) cat: _catIcon(cat)};
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -328,9 +378,31 @@ class _StatsTabState extends State<StatsTab> {
                 const SizedBox(height: 12),
                 _buildActiveFilterChips(),
                 if (catMap.isNotEmpty) ...[
-                  _DonutChart(catMap: catMap, total: total),
+                  _DonutChart(catMap: catMap, total: total, colorMap: colorMap),
                   const SizedBox(height: 24),
-                  _CategorySection(catMap: catMap, total: total),
+                  _CategorySection(
+                    catMap: catMap,
+                    total: total,
+                    onTapCategory: _openCategoryDetail,
+                    colorMap: colorMap,
+                    iconMap: iconMap,
+                  ),
+                  ...() {
+                    final userMap = _userMap(_selectedType);
+                    if (userMap.length < 2) return <Widget>[];
+                    return [
+                      const SizedBox(height: 24),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4, bottom: 10),
+                        child: Text(
+                          '사용자별 ${_selectedType == TransactionType.expense ? '지출' : '수입'}',
+                          style: const TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      _UserSection(userMap: userMap, total: total),
+                    ];
+                  }(),
                 ] else
                   Padding(
                     padding: const EdgeInsets.only(top: 40),
@@ -713,8 +785,13 @@ class _PeriodOption extends StatelessWidget {
 class _DonutChart extends StatelessWidget {
   final Map<String, int> catMap;
   final int total;
+  final Map<String, Color> colorMap;
 
-  const _DonutChart({required this.catMap, required this.total});
+  const _DonutChart({
+    required this.catMap,
+    required this.total,
+    required this.colorMap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -737,7 +814,7 @@ class _DonutChart extends StatelessWidget {
             width: 220,
             height: 220,
             child: CustomPaint(
-              painter: _DonutPainter(catMap: catMap, total: total),
+              painter: _DonutPainter(catMap: catMap, total: total, colorMap: colorMap),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -762,7 +839,7 @@ class _DonutChart extends StatelessWidget {
             runSpacing: 8,
             alignment: WrapAlignment.center,
             children: catMap.entries.map((e) {
-              final color = categoryColors[e.key] ?? Colors.grey;
+              final color = colorMap[e.key] ?? Colors.grey;
               final pct = total > 0
                   ? (e.value / total * 100).toStringAsFixed(1)
                   : '0.0';
@@ -792,8 +869,9 @@ class _DonutChart extends StatelessWidget {
 class _DonutPainter extends CustomPainter {
   final Map<String, int> catMap;
   final int total;
+  final Map<String, Color> colorMap;
 
-  _DonutPainter({required this.catMap, required this.total});
+  _DonutPainter({required this.catMap, required this.total, required this.colorMap});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -815,7 +893,7 @@ class _DonutPainter extends CustomPainter {
     for (final entry in catMap.entries) {
       final sweep = (entry.value / total) * 2 * pi - gapAngle;
       if (sweep <= 0) continue;
-      paint.color = categoryColors[entry.key] ?? Colors.grey;
+      paint.color = colorMap[entry.key] ?? Colors.grey;
       canvas.drawArc(rect, startAngle + gapAngle / 2, sweep, false, paint);
       startAngle += sweep + gapAngle;
     }
@@ -962,17 +1040,25 @@ class _BannerItem extends StatelessWidget {
   }
 }
 
-// ── Category list ─────────────────────────────────────────────────────────────
+// ── User stats ────────────────────────────────────────────────────────────────
 
-class _CategorySection extends StatelessWidget {
-  final Map<String, int> catMap;
+const _kUserColors = [
+  Color(0xFF4361EE),
+  Color(0xFFE63946),
+  Color(0xFF2A9D8F),
+  Color(0xFFE9C46A),
+  Color(0xFFF4A261),
+];
+
+class _UserSection extends StatelessWidget {
+  final Map<String, int> userMap;
   final int total;
 
-  const _CategorySection({required this.catMap, required this.total});
+  const _UserSection({required this.userMap, required this.total});
 
   @override
   Widget build(BuildContext context) {
-    final maxAmount = catMap.values.first;
+    final maxAmount = userMap.values.fold(0, max);
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -988,14 +1074,15 @@ class _CategorySection extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          for (int i = 0; i < catMap.entries.length; i++) ...[
-            _CategoryRow(
-              category: catMap.entries.elementAt(i).key,
-              amount: catMap.entries.elementAt(i).value,
+          for (int i = 0; i < userMap.entries.length; i++) ...[
+            _UserRow(
+              nickname: userMap.entries.elementAt(i).key,
+              amount: userMap.entries.elementAt(i).value,
               total: total,
               maxAmount: maxAmount,
+              color: _kUserColors[i % _kUserColors.length],
             ),
-            if (i < catMap.length - 1) const SizedBox(height: 16),
+            if (i < userMap.length - 1) const SizedBox(height: 16),
           ],
         ],
       ),
@@ -1003,25 +1090,25 @@ class _CategorySection extends StatelessWidget {
   }
 }
 
-class _CategoryRow extends StatelessWidget {
-  final String category;
+class _UserRow extends StatelessWidget {
+  final String nickname;
   final int amount;
   final int total;
   final int maxAmount;
+  final Color color;
 
-  const _CategoryRow({
-    required this.category,
+  const _UserRow({
+    required this.nickname,
     required this.amount,
     required this.total,
     required this.maxAmount,
+    required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    final color = categoryColors[category] ?? Colors.grey;
-    final ratio = amount / maxAmount;
-    final percent =
-        total > 0 ? (amount / total * 100).toStringAsFixed(1) : '0.0';
+    final ratio = maxAmount > 0 ? amount / maxAmount : 0.0;
+    final percent = total > 0 ? (amount / total * 100).toStringAsFixed(1) : '0.0';
 
     return Column(
       children: [
@@ -1034,12 +1121,11 @@ class _CategoryRow extends StatelessWidget {
                 color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(categoryIcons[category] ?? Icons.circle,
-                  color: color, size: 18),
+              child: Icon(Icons.person_outline, color: color, size: 18),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(category,
+              child: Text(nickname,
                   style: const TextStyle(
                       fontSize: 14, fontWeight: FontWeight.w500)),
             ),
@@ -1067,6 +1153,141 @@ class _CategoryRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── Category list ─────────────────────────────────────────────────────────────
+
+class _CategorySection extends StatelessWidget {
+  final Map<String, int> catMap;
+  final int total;
+  final ValueChanged<String> onTapCategory;
+  final Map<String, Color> colorMap;
+  final Map<String, IconData> iconMap;
+
+  const _CategorySection({
+    required this.catMap,
+    required this.total,
+    required this.onTapCategory,
+    required this.colorMap,
+    required this.iconMap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final maxAmount = catMap.values.first;
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          for (int i = 0; i < catMap.entries.length; i++) ...[
+            _CategoryRow(
+              category: catMap.entries.elementAt(i).key,
+              amount: catMap.entries.elementAt(i).value,
+              total: total,
+              maxAmount: maxAmount,
+              color: colorMap[catMap.entries.elementAt(i).key] ?? Colors.grey,
+              icon: iconMap[catMap.entries.elementAt(i).key] ?? Icons.more_horiz,
+              onTap: () => onTapCategory(catMap.entries.elementAt(i).key),
+            ),
+            if (i < catMap.length - 1) ...[
+              const SizedBox(height: 12),
+              const Divider(height: 1),
+              const SizedBox(height: 12),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _CategoryRow extends StatelessWidget {
+  final String category;
+  final int amount;
+  final int total;
+  final int maxAmount;
+  final Color color;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _CategoryRow({
+    required this.category,
+    required this.amount,
+    required this.total,
+    required this.maxAmount,
+    required this.color,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final ratio = amount / maxAmount;
+    final percent =
+        total > 0 ? (amount / total * 100).toStringAsFixed(1) : '0.0';
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: color, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(category,
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w500)),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('${formatCurrency(amount)}원',
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w700)),
+                  Text('$percent%',
+                      style: const TextStyle(
+                          fontSize: 11, color: Colors.black38)),
+                ],
+              ),
+              const SizedBox(width: 4),
+              const Icon(Icons.chevron_right, size: 18, color: Colors.black26),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: ratio,
+              backgroundColor: color.withValues(alpha: 0.1),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+              minHeight: 6,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

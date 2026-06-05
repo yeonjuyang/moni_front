@@ -13,11 +13,13 @@ class LedgerOnboardingScreen extends StatefulWidget {
 class _LedgerOnboardingScreenState extends State<LedgerOnboardingScreen> {
   bool _showJoinInput = false;
   final _codeController = TextEditingController();
+  final _nicknameController = TextEditingController();
   bool _isJoining = false;
 
   @override
   void dispose() {
     _codeController.dispose();
+    _nicknameController.dispose();
     super.dispose();
   }
 
@@ -32,6 +34,11 @@ class _LedgerOnboardingScreenState extends State<LedgerOnboardingScreen> {
     setState(() => _isJoining = true);
     try {
       final ledger = await LedgerService.joinLedger(code);
+      final nickname = _nicknameController.text.trim();
+      if (nickname.isNotEmpty) {
+        await LedgerService.updateMyNickname(
+            ledgerId: ledger.ledgerId, nickname: nickname);
+      }
       await LedgerService.saveLastLedgerId(ledger.ledgerId);
       if (!mounted) return;
       Navigator.pushReplacement(
@@ -120,6 +127,17 @@ class _LedgerOnboardingScreenState extends State<LedgerOnboardingScreen> {
                         border: OutlineInputBorder(),
                         counterText: '',
                       ),
+                      textInputAction: TextInputAction.next,
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _nicknameController,
+                      decoration: const InputDecoration(
+                        labelText: '이 가계부에서 내 이름',
+                        hintText: '예) 홍길동',
+                        border: OutlineInputBorder(),
+                      ),
+                      textInputAction: TextInputAction.done,
                       onSubmitted: (_) => _join(),
                     ),
                     const SizedBox(height: 12),
