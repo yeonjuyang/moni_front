@@ -14,7 +14,8 @@ class MonthSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.max,
       children: [
         IconButton(
           icon: const Icon(Icons.chevron_left),

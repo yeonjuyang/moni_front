@@ -37,7 +37,6 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
     return e.isEmpty ? 0 : _eval(e);
   }
 
-  // Format expression for display: numbers get comma separators, operators become symbols
   String _format(String expr) {
     final sb = StringBuffer();
     final buf = StringBuffer();
@@ -68,7 +67,6 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
     if (parts.length > 1) sb.write('.${parts[1]}');
   }
 
-  // Evaluate with proper operator precedence (* / before + -)
   int _eval(String expr) {
     if (expr.isEmpty) return 0;
     final tokens = <dynamic>[];
@@ -88,7 +86,6 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
     if (tokens.isEmpty || tokens.first is String) return 0;
     if (tokens.length == 1) return (tokens[0] as double).round();
 
-    // First pass: * and /
     int i = 1;
     while (i < tokens.length) {
       if (tokens[i] == '*' || tokens[i] == '/') {
@@ -101,7 +98,6 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
       }
     }
 
-    // Second pass: + and -
     double result = tokens[0] as double;
     for (int j = 1; j + 1 < tokens.length; j += 2) {
       result += (tokens[j] == '+' ? 1 : -1) * (tokens[j + 1] as double);
@@ -134,7 +130,6 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
             _ => label,
           };
           if (_isResult) _isResult = false;
-          // Strip trailing operator or dangling decimal before appending
           final base = (_endsWithOp || _expr.endsWith('.'))
               ? _expr.substring(0, _expr.length - 1)
               : _expr;
@@ -153,10 +148,10 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
             if (!currentNum.contains('.')) _expr += '.';
           }
 
-        default: // digits: 0, 00, 000, 1-9
-          // Map 00/000 → '0' when starting a new number to avoid leading zeros
+        default:
           final isNewNum = _isResult || _expr.isEmpty || _endsWithOp;
-          final digits = isNewNum && (label == '00' || label == '000') ? '0' : label;
+          final digits =
+              isNewNum && (label == '00' || label == '000') ? '0' : label;
           if (_isResult) {
             _expr = digits;
             _isResult = false;
@@ -180,11 +175,11 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
 
     return Column(
       children: [
-        // Display
+        // ── 디스플레이 ──────────────────────────────────
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 14),
-          color: cs.surfaceContainerLow,
+          color: Colors.white,
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -194,77 +189,99 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                 child: Text(
                   displayText,
                   style: const TextStyle(
-                      fontSize: 34, fontWeight: FontWeight.w600),
+                    fontSize: 34,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.5,
+                    color: Colors.black87,
+                  ),
                 ),
               ),
               if (!_isResult && hasOp) ...[
-                const SizedBox(height: 2),
+                const SizedBox(height: 3),
                 Text(
                   '= ${formatCurrency(_currentValue)}원',
                   style: TextStyle(
-                      fontSize: 13,
-                      color: cs.onSurface.withValues(alpha: 0.4)),
+                    fontSize: 13,
+                    color: cs.primary.withValues(alpha: 0.7),
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ],
           ),
         ),
-        const Divider(height: 1),
-        // Button grid
+        const Divider(height: 1, color: Color(0xFFEEEEEE)),
+        // ── 버튼 그리드 ─────────────────────────────────
         Expanded(
-          child: Column(
-            children: [
-              Expanded(child: _row(['+', '-', '×', '÷'], cs)),
-              Expanded(child: _row(['7', '8', '9', '='], cs)),
-              Expanded(child: _row(['4', '5', '6', '.'], cs)),
-              Expanded(child: _row(['1', '2', '3', '지움'], cs)),
-              Expanded(child: _row(['00', '0', '000', '확인'], cs)),
-            ],
+          child: ColoredBox(
+            color: const Color(0xFFF5F6FA),
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                children: [
+                  Expanded(child: _row(['+', '-', '×', '÷'], cs)),
+                  const SizedBox(height: 7),
+                  Expanded(child: _row(['7', '8', '9', '='], cs)),
+                  const SizedBox(height: 7),
+                  Expanded(child: _row(['4', '5', '6', '.'], cs)),
+                  const SizedBox(height: 7),
+                  Expanded(child: _row(['1', '2', '3', '지움'], cs)),
+                  const SizedBox(height: 7),
+                  Expanded(child: _row(['00', '0', '000', '확인'], cs)),
+                ],
+              ),
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _row(List<String> labels, ColorScheme cs) => Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: labels
-            .map((l) => Expanded(
-                  child: _CalcButton(
-                    label: l,
-                    onTap: l == '확인'
-                        ? () => widget.onConfirm(_currentValue)
-                        : () => _tap(l),
-                    onLongPress: l == '지움' ? _clearAll : null,
-                    bg: _bg(l, cs),
-                    fg: _fg(l, cs),
-                    fontSize: _fontSize(l),
-                    bold: l == '확인' || l == '=',
-                  ),
-                ))
-            .toList(),
-      );
+  Widget _row(List<String> labels, ColorScheme cs) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (int i = 0; i < labels.length; i++) ...[
+          if (i > 0) const SizedBox(width: 7),
+          Expanded(
+            child: _CalcButton(
+              label: labels[i],
+              onTap: labels[i] == '확인'
+                  ? () => widget.onConfirm(_currentValue)
+                  : () => _tap(labels[i]),
+              onLongPress: labels[i] == '지움' ? _clearAll : null,
+              bg: _bg(labels[i], cs),
+              fg: _fg(labels[i], cs),
+              fontSize: _fontSize(labels[i]),
+              bold: labels[i] == '확인' || labels[i] == '=',
+            ),
+          ),
+        ],
+      ],
+    );
+  }
 
   Color _bg(String l, ColorScheme cs) {
-    if ('+-×÷'.contains(l)) return cs.secondaryContainer;
-    if (l == '=' || l == '확인') return cs.primary;
-    if (l == '지움') return cs.errorContainer.withValues(alpha: 0.55);
-    if (l == '.') return cs.surfaceContainerHighest;
-    return cs.surface;
+    if ('+-×÷'.contains(l)) return const Color(0xFFEEF0FF);
+    if (l == '=') return const Color(0xFFEEF0FF);
+    if (l == '확인') return cs.primary;
+    if (l == '지움') return const Color(0xFFFEF0F0);
+    if (l == '.') return const Color(0xFFEEEFF4);
+    return Colors.white;
   }
 
   Color _fg(String l, ColorScheme cs) {
-    if ('+-×÷'.contains(l)) return cs.onSecondaryContainer;
-    if (l == '=' || l == '확인') return cs.onPrimary;
-    if (l == '지움') return cs.error;
-    return cs.onSurface;
+    if ('+-×÷='.contains(l)) return cs.primary;
+    if (l == '확인') return Colors.white;
+    if (l == '지움') return Colors.red.shade400;
+    return Colors.black87;
   }
 
   double _fontSize(String l) {
-    if (l == '확인') return 16;
-    if (l == '지움') return 14;
-    if (l == '000' || l == '00') return 18;
-    return 22;
+    if (l == '확인') return 15;
+    if (l == '지움') return 13;
+    if (l == '000' || l == '00') return 17;
+    return 21;
   }
 }
 
@@ -283,7 +300,7 @@ class _CalcButton extends StatelessWidget {
     this.onLongPress,
     required this.bg,
     required this.fg,
-    this.fontSize = 22,
+    this.fontSize = 21,
     this.bold = false,
   });
 
@@ -291,9 +308,11 @@ class _CalcButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: bg,
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
         onLongPress: onLongPress,
+        borderRadius: BorderRadius.circular(14),
         child: Center(
           child: Text(
             label,

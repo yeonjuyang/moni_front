@@ -81,13 +81,13 @@ class _HomeScreenState extends State<HomeScreen> {
         onDeleteTransaction: _deleteTransaction,
         onRefresh: _loadTransactions,
       ),
-      AssetTab(ledgerId: widget.ledgerId),
       StatsTab(
         ledgerId: widget.ledgerId,
         currentMonth: _currentMonth,
         transactions: _transactions,
         onMonthChanged: _changeMonth,
       ),
+      AssetTab(ledgerId: widget.ledgerId),
       SettingsTab(ledgerId: widget.ledgerId),
     ];
 
@@ -103,14 +103,14 @@ class _HomeScreenState extends State<HomeScreen> {
             label: '가계부',
           ),
           NavigationDestination(
-            icon: Icon(Icons.account_balance_wallet_outlined),
-            selectedIcon: Icon(Icons.account_balance_wallet),
-            label: '자산',
-          ),
-          NavigationDestination(
             icon: Icon(Icons.bar_chart_outlined),
             selectedIcon: Icon(Icons.bar_chart),
             label: '통계',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.account_balance_wallet_outlined),
+            selectedIcon: Icon(Icons.account_balance_wallet),
+            label: '자산',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),

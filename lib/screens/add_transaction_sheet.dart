@@ -8,6 +8,7 @@ import '../services/transaction_service.dart';
 import '../services/user_service.dart';
 import '../utils/formatters.dart';
 import '../widgets/calculator_widget.dart';
+import '../widgets/quick_date_picker.dart';
 
 class AddTransactionSheet extends StatefulWidget {
   final int ledgerId;
@@ -126,7 +127,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
 
   Future<void> _loadUsers() async {
     try {
-      final users = await UserService.fetchUsers();
+      final users = await UserService.fetchLedgerMembers(widget.ledgerId);
       if (mounted) {
         setState(() {
           _users = users;
@@ -155,11 +156,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   }
 
   Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
+    final picked = await showQuickDatePicker(
+      context,
       initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
     );
     if (picked != null) setState(() => _selectedDate = picked);
   }
@@ -363,25 +362,27 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             ),
             const SizedBox(height: 16),
 
-            // 내용
-            TextField(
-              controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: '내용',
-                border: OutlineInputBorder(),
+            // 날짜
+            InkWell(
+              onTap: _pickDate,
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.black26),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.calendar_today_outlined,
+                        size: 18, color: Colors.black54),
+                    const SizedBox(width: 8),
+                    Text(formatDateHeader(_selectedDate),
+                        style: const TextStyle(fontSize: 15)),
+                  ],
+                ),
               ),
-              textInputAction: TextInputAction.next,
-            ),
-            const SizedBox(height: 12),
-
-            // 비고 (선택)
-            TextField(
-              controller: _noteController,
-              decoration: const InputDecoration(
-                labelText: '비고 (선택)',
-                border: OutlineInputBorder(),
-              ),
-              textInputAction: TextInputAction.done,
             ),
             const SizedBox(height: 12),
 
@@ -412,6 +413,28 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                   ],
                 ),
               ),
+            ),
+            const SizedBox(height: 12),
+
+            // 내용
+            TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(
+                labelText: '내용',
+                border: OutlineInputBorder(),
+              ),
+              textInputAction: TextInputAction.next,
+            ),
+            const SizedBox(height: 12),
+
+            // 비고 (선택)
+            TextField(
+              controller: _noteController,
+              decoration: const InputDecoration(
+                labelText: '비고 (선택)',
+                border: OutlineInputBorder(),
+              ),
+              textInputAction: TextInputAction.done,
             ),
             const SizedBox(height: 16),
 
@@ -458,30 +481,6 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                   );
                 }).toList(),
               ),
-            const SizedBox(height: 16),
-
-            // 날짜
-            InkWell(
-              onTap: _pickDate,
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.black26),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.calendar_today_outlined,
-                        size: 18, color: Colors.black54),
-                    const SizedBox(width: 8),
-                    Text(formatDateHeader(_selectedDate),
-                        style: const TextStyle(fontSize: 15)),
-                  ],
-                ),
-              ),
-            ),
             const SizedBox(height: 20),
 
             // 저장

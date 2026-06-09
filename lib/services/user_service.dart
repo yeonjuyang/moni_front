@@ -21,4 +21,11 @@ class UserService {
         .map((json) => UserModel.fromJson(json as Map<String, dynamic>))
         .toList();
   }
+
+  static Future<List<UserModel>> fetchLedgerMembers(int ledgerId) async {
+    final response = await ApiClient.dio.get('/api/ledgers/$ledgerId/members');
+    return (response.data as List)
+        .map((json) => UserModel.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
 }

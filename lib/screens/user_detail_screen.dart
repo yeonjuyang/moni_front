@@ -5,29 +5,27 @@ import '../models/transaction.dart';
 import '../utils/formatters.dart';
 import '../widgets/month_selector.dart';
 
-class CategoryDetailScreen extends StatefulWidget {
-  final String category;
+class UserDetailScreen extends StatefulWidget {
+  final String nickname;
   final TransactionType type;
   final List<Transaction> transactions;
   final DetailPeriod period;
-  final Color categoryColor;
-  final IconData categoryIcon;
+  final Color color;
 
-  const CategoryDetailScreen({
+  const UserDetailScreen({
     super.key,
-    required this.category,
+    required this.nickname,
     required this.type,
     required this.transactions,
     required this.period,
-    required this.categoryColor,
-    required this.categoryIcon,
+    required this.color,
   });
 
   @override
-  State<CategoryDetailScreen> createState() => _CategoryDetailScreenState();
+  State<UserDetailScreen> createState() => _UserDetailScreenState();
 }
 
-class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
+class _UserDetailScreenState extends State<UserDetailScreen> {
   late DateTime _currentDate;
 
   @override
@@ -146,14 +144,14 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               width: 28,
               height: 28,
               decoration: BoxDecoration(
-                color: widget.categoryColor.withValues(alpha: 0.12),
+                color: widget.color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(widget.categoryIcon,
-                  color: widget.categoryColor, size: 16),
+              child:
+                  Icon(Icons.person_outline, color: widget.color, size: 16),
             ),
             const SizedBox(width: 8),
-            Text(widget.category,
+            Text(widget.nickname,
                 style: const TextStyle(fontWeight: FontWeight.w700)),
           ],
         ),
@@ -168,7 +166,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
             _LineChartCard(
               yearlyTotals: yearlyTotals,
               highlightedMonth: _highlightedMonth,
-              color: widget.categoryColor,
+              color: widget.color,
             ),
             const SizedBox(height: 12),
           ],
@@ -198,8 +196,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
             ...sorted.map(
               (t) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: _TransactionCard(
-                    transaction: t, typeColor: typeColor),
+                child: _TransactionCard(transaction: t, typeColor: typeColor),
               ),
             ),
         ],
@@ -351,8 +348,7 @@ class _LineChartPainter extends CustomPainter {
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      tp.paint(
-          canvas,
+      tp.paint(canvas,
           Offset(pts[i].dx - tp.width / 2, size.height - labelH + 2));
     }
   }
@@ -405,8 +401,7 @@ class _SummaryCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
-              style:
-                  const TextStyle(fontSize: 12, color: Colors.black45)),
+              style: const TextStyle(fontSize: 12, color: Colors.black45)),
           const SizedBox(height: 4),
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -464,16 +459,12 @@ class _TransactionCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text(
-                  '${t.date.day}',
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w700),
-                ),
-                Text(
-                  '${t.date.month}월',
-                  style: const TextStyle(
-                      fontSize: 10, color: Colors.black38),
-                ),
+                Text('${t.date.day}',
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w700)),
+                Text('${t.date.month}월',
+                    style: const TextStyle(
+                        fontSize: 10, color: Colors.black38)),
               ],
             ),
           ),
@@ -488,10 +479,9 @@ class _TransactionCard extends StatelessWidget {
                       fontSize: 15, fontWeight: FontWeight.w500),
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (t.paidByUserNickname != null)
-                  Text(t.paidByUserNickname!,
-                      style: const TextStyle(
-                          fontSize: 12, color: Colors.black38)),
+                Text(t.category,
+                    style: const TextStyle(
+                        fontSize: 12, color: Colors.black38)),
               ],
             ),
           ),

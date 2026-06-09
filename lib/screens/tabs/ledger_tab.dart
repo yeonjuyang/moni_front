@@ -3,6 +3,9 @@ import '../../models/transaction.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/month_selector.dart';
 import '../add_transaction_sheet.dart';
+import '../transaction_search_screen.dart';
+
+// ── LedgerTab ─────────────────────────────────────────────────────────────────
 
 class LedgerTab extends StatefulWidget {
   final int ledgerId;
@@ -52,24 +55,22 @@ class _LedgerTabState extends State<LedgerTab> {
 
   List<Transaction> get _displayedTransactions {
     final d = _selectedDate;
-    if (d != null) {
-      return _monthTransactions
-          .where((t) =>
-              t.date.year == d.year &&
-              t.date.month == d.month &&
-              t.date.day == d.day)
-          .toList();
-    }
-    return [];
+    if (d == null) return [];
+    return _monthTransactions
+        .where((t) =>
+            t.date.year == d.year &&
+            t.date.month == d.month &&
+            t.date.day == d.day)
+        .toList();
   }
 
   int get _totalIncome => _monthTransactions
       .where((t) => t.type == TransactionType.income)
-      .fold(0, (sum, t) => sum + t.amount);
+      .fold(0, (s, t) => s + t.amount);
 
   int get _totalExpense => _monthTransactions
       .where((t) => t.type == TransactionType.expense)
-      .fold(0, (sum, t) => sum + t.amount);
+      .fold(0, (s, t) => s + t.amount);
 
   Map<DateTime, List<Transaction>> get _groupedDisplayed {
     final map = <DateTime, List<Transaction>>{};
@@ -91,8 +92,7 @@ class _LedgerTabState extends State<LedgerTab> {
       isScrollControlled: true,
       useSafeArea: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (_) => AddTransactionSheet(
         ledgerId: widget.ledgerId,
         initialDate: _selectedDate ??
@@ -108,14 +108,27 @@ class _LedgerTabState extends State<LedgerTab> {
       isScrollControlled: true,
       useSafeArea: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (_) => AddTransactionSheet(
         ledgerId: widget.ledgerId,
         initialDate: transaction.date,
         editing: transaction,
         onSave: widget.onUpdateTransaction,
         onDelete: () => widget.onDeleteTransaction(transaction.id),
+      ),
+    );
+  }
+
+  void _openSearch() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TransactionSearchScreen(
+          ledgerId: widget.ledgerId,
+          transactions: widget.transactions,
+          onUpdate: widget.onUpdateTransaction,
+          onDelete: widget.onDeleteTransaction,
+        ),
       ),
     );
   }
@@ -130,83 +143,97 @@ class _LedgerTabState extends State<LedgerTab> {
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         backgroundColor: const Color(0xFFF8F9FA),
-        title: MonthSelector(
-            currentMonth: widget.currentMonth, onChanged: _onMonthChanged),
-        centerTitle: true,
         elevation: 0,
+        leading: const SizedBox.shrink(),
+        leadingWidth: 52,
+        centerTitle: true,
+        title: const Text('가계부',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search_outlined),
+            onPressed: _openSearch,
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: MonthSelector(
+                currentMonth: widget.currentMonth,
+                onChanged: _onMonthChanged),
+          ),
           _SummaryCard(income: _totalIncome, expense: _totalExpense),
           Expanded(
             child: RefreshIndicator(
               onRefresh: widget.onRefresh,
               child: CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: _CalendarSection(
-                    currentMonth: widget.currentMonth,
-                    transactions: _monthTransactions,
-                    selectedDate: _selectedDate,
-                    onDateSelected: (date) =>
-                        setState(() => _selectedDate = date),
-                  ),
-                ),
-                if (displayed.isEmpty)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.receipt_long_outlined,
-                              size: 48,
-                              color: Colors.black.withValues(alpha: 0.15)),
-                          const SizedBox(height: 12),
-                          Text(
-                            _selectedDate != null
-                                ? '이 날의 내역이 없어요'
-                                : '날짜를 선택해주세요',
-                            style: const TextStyle(
-                                color: Colors.black38, fontSize: 15),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.only(bottom: 96),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, i) {
-                          final date = sortedDates[i];
-                          return _DateGroup(
-                            date: date,
-                            transactions: grouped[date]!,
-                            onEdit: (t) => _openEditSheet(context, t),
-                          );
-                        },
-                        childCount: sortedDates.length,
-                      ),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: _CalendarSection(
+                      currentMonth: widget.currentMonth,
+                      transactions: _monthTransactions,
+                      selectedDate: _selectedDate,
+                      onDateSelected: (date) =>
+                          setState(() => _selectedDate = date),
                     ),
                   ),
-              ],
-            ),
+                  if (displayed.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.receipt_long_outlined,
+                                size: 48,
+                                color: Colors.black.withValues(alpha: 0.15)),
+                            const SizedBox(height: 12),
+                            Text(
+                              _selectedDate != null
+                                  ? '이 날의 내역이 없어요'
+                                  : '날짜를 선택해주세요',
+                              style: const TextStyle(
+                                  color: Colors.black38, fontSize: 15),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.only(bottom: 96),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, i) {
+                            final date = sortedDates[i];
+                            return _DateGroup(
+                              date: date,
+                              transactions: grouped[date]!,
+                              onEdit: (t) => _openEditSheet(context, t),
+                            );
+                          },
+                          childCount: sortedDates.length,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: () => _openAddSheet(context),
-        icon: const Icon(Icons.add),
-        label: const Text('내역 추가'),
+        child: const Icon(Icons.add),
       ),
     );
   }
 }
 
-// ─── 달력 ──────────────────────────────────────────────────────────────────
+// ── 달력 ──────────────────────────────────────────────────────────────────────
 
 class _CalendarSection extends StatelessWidget {
   final DateTime currentMonth;
@@ -221,7 +248,6 @@ class _CalendarSection extends StatelessWidget {
     required this.onDateSelected,
   });
 
-  /// day → (income, expense)
   Map<int, (int, int)> get _dailyTotals {
     final map = <int, (int, int)>{};
     for (final t in transactions) {
@@ -241,10 +267,8 @@ class _CalendarSection extends StatelessWidget {
     final firstDay = DateTime(currentMonth.year, currentMonth.month, 1);
     final daysInMonth =
         DateTime(currentMonth.year, currentMonth.month + 1, 0).day;
-    // Sunday=0 … Saturday=6 (Dart weekday: Mon=1…Sun=7)
     final startOffset = firstDay.weekday % 7;
     final rowCount = ((startOffset + daysInMonth) / 7).ceil();
-
     const headers = ['일', '월', '화', '수', '목', '금', '토'];
 
     return Container(
@@ -262,32 +286,28 @@ class _CalendarSection extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // 요일 헤더
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),
             child: Row(
               children: headers.map((h) {
                 return Expanded(
                   child: Center(
-                    child: Text(
-                      h,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: h == '일'
-                            ? Colors.red.shade400
-                            : h == '토'
-                                ? Colors.blue.shade400
-                                : Colors.black54,
-                      ),
-                    ),
+                    child: Text(h,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: h == '일'
+                              ? Colors.red.shade400
+                              : h == '토'
+                                  ? Colors.blue.shade400
+                                  : Colors.black54,
+                        )),
                   ),
                 );
               }).toList(),
             ),
           ),
           const Divider(height: 1),
-          // 날짜 행
           ...List.generate(rowCount, (row) {
             return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,7 +327,6 @@ class _CalendarSection extends StatelessWidget {
                 final isToday = today.year == currentMonth.year &&
                     today.month == currentMonth.month &&
                     today.day == day;
-
                 return Expanded(
                   child: _DayCell(
                     day: day,
@@ -317,8 +336,7 @@ class _CalendarSection extends StatelessWidget {
                     isToday: isToday,
                     isSunday: col == 0,
                     isSaturday: col == 6,
-                    onTap: () =>
-                        onDateSelected(isSelected ? null : date),
+                    onTap: () => onDateSelected(isSelected ? null : date),
                   ),
                 );
               }),
@@ -369,10 +387,12 @@ class _DayCell extends StatelessWidget {
       dayNumColor = Colors.black87;
     }
 
-    final Color expenseColor =
-        isSelected ? cs.onPrimary.withValues(alpha: 0.9) : const Color(0xFFE17055);
-    final Color incomeColor =
-        isSelected ? cs.onPrimary.withValues(alpha: 0.9) : const Color(0xFF4361EE);
+    final expenseColor = isSelected
+        ? cs.onPrimary.withValues(alpha: 0.9)
+        : const Color(0xFFE17055);
+    final incomeColor = isSelected
+        ? cs.onPrimary.withValues(alpha: 0.9)
+        : const Color(0xFF4361EE);
 
     return InkWell(
       onTap: onTap,
@@ -381,40 +401,33 @@ class _DayCell extends StatelessWidget {
         margin: const EdgeInsets.all(2),
         decoration: isSelected
             ? BoxDecoration(
-                color: cs.primary,
-                borderRadius: BorderRadius.circular(8),
-              )
+                color: cs.primary, borderRadius: BorderRadius.circular(8))
             : isToday
                 ? BoxDecoration(
                     border: Border.all(color: cs.primary, width: 1.5),
-                    borderRadius: BorderRadius.circular(8),
-                  )
+                    borderRadius: BorderRadius.circular(8))
                 : null,
         padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 1),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              '$day',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: (isToday || isSelected)
-                    ? FontWeight.bold
-                    : FontWeight.normal,
-                color: dayNumColor,
-              ),
-            ),
+            Text('$day',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: (isToday || isSelected)
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+                  color: dayNumColor,
+                )),
             if (expense > 0) ...[
               const SizedBox(height: 2),
               SizedBox(
                 width: double.infinity,
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: Text(
-                    '-${formatCurrency(expense)}',
-                    style: TextStyle(fontSize: 9, color: expenseColor),
-                    textAlign: TextAlign.center,
-                  ),
+                  child: Text('-${formatCurrency(expense)}',
+                      style: TextStyle(fontSize: 9, color: expenseColor),
+                      textAlign: TextAlign.center),
                 ),
               ),
             ],
@@ -424,11 +437,9 @@ class _DayCell extends StatelessWidget {
                 width: double.infinity,
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: Text(
-                    '+${formatCurrency(income)}',
-                    style: TextStyle(fontSize: 9, color: incomeColor),
-                    textAlign: TextAlign.center,
-                  ),
+                  child: Text('+${formatCurrency(income)}',
+                      style: TextStyle(fontSize: 9, color: incomeColor),
+                      textAlign: TextAlign.center),
                 ),
               ),
             ],
@@ -439,7 +450,7 @@ class _DayCell extends StatelessWidget {
   }
 }
 
-// ─── 요약 카드 ──────────────────────────────────────────────────────────────
+// ── 요약 카드 ─────────────────────────────────────────────────────────────────
 
 class _SummaryCard extends StatelessWidget {
   final int income;
@@ -450,76 +461,106 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final balance = income - expense;
+    final isNegative = balance < 0;
+
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-      padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 20),
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF4361EE), Color(0xFF7209B7)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF4361EE).withValues(alpha: 0.35),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF4361EE).withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Expanded(child: _SummaryItem(label: '수입', amount: income)),
-          Container(width: 1, height: 44, color: Colors.white.withValues(alpha: 0.25)),
-          Expanded(child: _SummaryItem(label: '지출', amount: expense)),
-          Container(width: 1, height: 44, color: Colors.white.withValues(alpha: 0.25)),
-          Expanded(child: _SummaryItem(label: '잔액', amount: balance, showSign: balance < 0)),
+          Expanded(
+            flex: 5,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('잔액',
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white.withValues(alpha: 0.65),
+                        fontWeight: FontWeight.w500)),
+                const SizedBox(height: 2),
+                Text(
+                  '${isNegative ? '-' : ''}${formatCurrency(balance.abs())}원',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color:
+                        isNegative ? const Color(0xFFFFB3BA) : Colors.white,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: 1,
+            height: 32,
+            color: Colors.white.withValues(alpha: 0.2),
+            margin: const EdgeInsets.symmetric(horizontal: 12),
+          ),
+          Expanded(
+            flex: 4,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _SubItem(label: '수입', amount: income),
+                const SizedBox(height: 6),
+                _SubItem(label: '지출', amount: expense),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _SummaryItem extends StatelessWidget {
+class _SubItem extends StatelessWidget {
   final String label;
   final int amount;
-  final bool showSign;
 
-  const _SummaryItem({
-    required this.label,
-    required this.amount,
-    this.showSign = false,
-  });
+  const _SubItem({required this.label, required this.amount});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Row(
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.white.withValues(alpha: 0.65),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          '${formatCurrency(amount.abs())}원',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: showSign ? const Color(0xFFFFB3BA) : Colors.white,
-          ),
-          overflow: TextOverflow.ellipsis,
+        Text(label,
+            style: TextStyle(
+                fontSize: 11,
+                color: Colors.white.withValues(alpha: 0.6),
+                fontWeight: FontWeight.w500)),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text('${formatCurrency(amount)}원',
+              style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white),
+              overflow: TextOverflow.ellipsis),
         ),
       ],
     );
   }
 }
 
-// ─── 거래 목록 ──────────────────────────────────────────────────────────────
+// ── 거래 목록 ─────────────────────────────────────────────────────────────────
 
 class _DateGroup extends StatelessWidget {
   final DateTime date;
@@ -548,15 +589,12 @@ class _DateGroup extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
           child: Row(
             children: [
-              Text(
-                formatDateHeader(date),
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black45,
-                  letterSpacing: 0.3,
-                ),
-              ),
+              Text(formatDateHeader(date),
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black45,
+                      letterSpacing: 0.3)),
               const Spacer(),
               if (dayIncome > 0)
                 Text('+${formatCurrency(dayIncome)}',
@@ -587,9 +625,8 @@ class _DateGroup extends StatelessWidget {
             children: [
               for (int i = 0; i < transactions.length; i++) ...[
                 _TransactionTile(
-                  transaction: transactions[i],
-                  onTap: () => onEdit(transactions[i]),
-                ),
+                    transaction: transactions[i],
+                    onTap: () => onEdit(transactions[i])),
                 if (i < transactions.length - 1)
                   const Divider(height: 1, indent: 64, endIndent: 16),
               ],
@@ -606,7 +643,8 @@ class _TransactionTile extends StatelessWidget {
   final Transaction transaction;
   final VoidCallback onTap;
 
-  const _TransactionTile({required this.transaction, required this.onTap});
+  const _TransactionTile(
+      {required this.transaction, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -646,14 +684,14 @@ class _TransactionTile extends StatelessWidget {
                     style: const TextStyle(
                         fontSize: 12, color: Colors.black38),
                   ),
-                  if (transaction.note != null && transaction.note!.isNotEmpty) ...[
+                  if (transaction.note != null &&
+                      transaction.note!.isNotEmpty) ...[
                     const SizedBox(height: 2),
-                    Text(
-                      transaction.note!,
-                      style: const TextStyle(fontSize: 12, color: Colors.black45),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    Text(transaction.note!,
+                        style: const TextStyle(
+                            fontSize: 12, color: Colors.black45),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
                   ],
                 ],
               ),

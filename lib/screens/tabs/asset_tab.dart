@@ -47,6 +47,9 @@ class _AssetTabState extends State<AssetTab> {
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         backgroundColor: const Color(0xFFF8F9FA),
+        leading: const SizedBox.shrink(),
+        leadingWidth: 48,
+        centerTitle: true,
         title: const Text('자산', style: TextStyle(fontWeight: FontWeight.w700)),
         elevation: 0,
         actions: [

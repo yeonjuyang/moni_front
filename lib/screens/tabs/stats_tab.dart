@@ -1,12 +1,15 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../models/category.dart';
+import '../../models/detail_period.dart';
 import '../../models/transaction.dart';
 import '../../services/category_service.dart';
 import '../../services/user_service.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/month_selector.dart';
+import '../../widgets/quick_date_picker.dart';
 import '../category_detail_screen.dart';
+import '../user_detail_screen.dart';
 
 // ── Filter config ─────────────────────────────────────────────────────────────
 
@@ -67,7 +70,7 @@ class _StatsTabState extends State<StatsTab> {
 
   Future<void> _loadData() async {
     try {
-      final usersFut = UserService.fetchUsers();
+      final usersFut = UserService.fetchLedgerMembers(widget.ledgerId);
       final catsFut = CategoryService.fetchCategories(ledgerId: widget.ledgerId);
       final users = await usersFut;
       final cats = await catsFut;
@@ -160,6 +163,24 @@ class _StatsTabState extends State<StatsTab> {
         map.entries.toList()..sort((a, b) => b.value.compareTo(a.value)));
   }
 
+  DetailPeriod get _detailPeriod {
+    switch (_filter.periodMode) {
+      case _PeriodMode.monthly:
+        return DetailPeriod(mode: DetailPeriodMode.monthly, date: widget.currentMonth);
+      case _PeriodMode.yearly:
+        return DetailPeriod(mode: DetailPeriodMode.yearly, date: widget.currentMonth);
+      case _PeriodMode.custom:
+        if (_filter.customRange != null) {
+          return DetailPeriod(
+            mode: DetailPeriodMode.custom,
+            date: widget.currentMonth,
+            range: _filter.customRange,
+          );
+        }
+        return DetailPeriod(mode: DetailPeriodMode.monthly, date: widget.currentMonth);
+    }
+  }
+
   void _openCategoryDetail(String category) {
     final transactions = widget.transactions
         .where((t) => t.type == _selectedType && t.category == category)
@@ -171,9 +192,28 @@ class _StatsTabState extends State<StatsTab> {
           category: category,
           type: _selectedType,
           transactions: transactions,
-          initialMonth: widget.currentMonth,
+          period: _detailPeriod,
           categoryColor: _catColor(category),
           categoryIcon: _catIcon(category),
+        ),
+      ),
+    );
+  }
+
+  void _openUserDetail(String nickname, Color color) {
+    final transactions = widget.transactions
+        .where((t) =>
+            t.type == _selectedType && t.paidByUserNickname == nickname)
+        .toList();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => UserDetailScreen(
+          nickname: nickname,
+          type: _selectedType,
+          transactions: transactions,
+          period: _detailPeriod,
+          color: color,
         ),
       ),
     );
@@ -212,8 +252,7 @@ class _StatsTabState extends State<StatsTab> {
 
     if (_filter.periodMode == _PeriodMode.yearly) {
       chips.add(Chip(
-        label: Text('${widget.currentMonth.year}년 전체',
-            style: const TextStyle(fontSize: 12)),
+        label: const Text('연별', style: TextStyle(fontSize: 12)),
         deleteIcon: const Icon(Icons.close, size: 14),
         onDeleted: () => setState(() => _filter = _FilterConfig(
               selectedUserIds: _filter.selectedUserIds,
@@ -225,12 +264,8 @@ class _StatsTabState extends State<StatsTab> {
 
     if (_filter.periodMode == _PeriodMode.custom &&
         _filter.customRange != null) {
-      final r = _filter.customRange!;
       chips.add(Chip(
-        label: Text(
-          '${r.start.month}/${r.start.day} ~ ${r.end.month}/${r.end.day}',
-          style: const TextStyle(fontSize: 12),
-        ),
+        label: const Text('기간별', style: TextStyle(fontSize: 12)),
         deleteIcon: const Icon(Icons.close, size: 14),
         onDeleted: () => setState(() => _filter = _FilterConfig(
               selectedUserIds: _filter.selectedUserIds,
@@ -298,36 +333,46 @@ class _StatsTabState extends State<StatsTab> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFF8F9FA),
         title: switch (_filter.periodMode) {
-          _PeriodMode.yearly => Column(
+          _PeriodMode.yearly => Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('연별',
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.black.withValues(alpha: 0.4))),
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: () => widget.onMonthChanged(
+                      DateTime(widget.currentMonth.year - 1, widget.currentMonth.month)),
+                ),
                 Text('${widget.currentMonth.year}년',
                     style: const TextStyle(
                         fontSize: 16, fontWeight: FontWeight.w600)),
-              ],
-            ),
-          _PeriodMode.custom when _filter.customRange != null => Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('기간 설정',
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.black.withValues(alpha: 0.4))),
-                Text(
-                  _rangeLabel(_filter.customRange!),
-                  style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w600),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: () => widget.onMonthChanged(
+                      DateTime(widget.currentMonth.year + 1, widget.currentMonth.month)),
                 ),
               ],
+            ),
+          _PeriodMode.custom when _filter.customRange != null => GestureDetector(
+              onTap: _openFilter,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _rangeLabel(_filter.customRange!),
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.edit_calendar_outlined,
+                      size: 14, color: Colors.black45),
+                ],
+              ),
             ),
           _ => MonthSelector(
               currentMonth: widget.currentMonth,
               onChanged: widget.onMonthChanged),
         },
+        leading: const SizedBox.shrink(),
+        leadingWidth: 48,
         centerTitle: true,
         elevation: 0,
         actions: [
@@ -400,7 +445,12 @@ class _StatsTabState extends State<StatsTab> {
                               fontSize: 14, fontWeight: FontWeight.w700),
                         ),
                       ),
-                      _UserSection(userMap: userMap, total: total),
+                      _UserSection(
+                        userMap: userMap,
+                        total: total,
+                        onTapUser: (nickname, color) =>
+                            _openUserDetail(nickname, color),
+                      ),
                     ];
                   }(),
                 ] else
@@ -462,21 +512,6 @@ class _FilterSheetState extends State<_FilterSheet> {
     _customRange = widget.initial.customRange;
     _selectedUserIds = Set.from(widget.initial.selectedUserIds);
     _excludedCategories = Set.from(widget.initial.excludedCategories);
-  }
-
-  Future<void> _pickDateRange() async {
-    final m = widget.currentMonth;
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-      initialDateRange: _customRange ??
-          DateTimeRange(
-            start: DateTime(m.year, m.month, 1),
-            end: DateTime(m.year, m.month + 1, 0),
-          ),
-    );
-    if (picked != null) setState(() => _customRange = picked);
   }
 
   void _reset() => setState(() {
@@ -610,43 +645,67 @@ class _FilterSheetState extends State<_FilterSheet> {
                         child: _PeriodOption(
                           label: '기간 설정',
                           selected: _periodMode == _PeriodMode.custom,
-                          onTap: () async {
-                            setState(() => _periodMode = _PeriodMode.custom);
-                            await _pickDateRange();
-                          },
+                          onTap: () => setState(() => _periodMode = _PeriodMode.custom),
                         ),
                       ),
                     ],
                   ),
                   if (_periodMode == _PeriodMode.custom) ...[
                     const SizedBox(height: 10),
-                    InkWell(
-                      onTap: _pickDateRange,
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: primary),
-                          borderRadius: BorderRadius.circular(10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _DateField(
+                            label: '시작일',
+                            date: _customRange?.start,
+                            onTap: () async {
+                              final picked = await showQuickDatePicker(
+                                context,
+                                initialDate: _customRange?.start ?? DateTime.now(),
+                              );
+                              if (picked != null) {
+                                setState(() {
+                                  final end = _customRange?.end;
+                                  _customRange = DateTimeRange(
+                                    start: picked,
+                                    end: (end != null && !end.isBefore(picked))
+                                        ? end
+                                        : picked,
+                                  );
+                                });
+                              }
+                            },
+                          ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.date_range_outlined,
-                                size: 16, color: primary),
-                            const SizedBox(width: 8),
-                            Text(
-                              _customRange != null
-                                  ? '${_customRange!.start.year}.${_customRange!.start.month.toString().padLeft(2, '0')}.${_customRange!.start.day.toString().padLeft(2, '0')}'
-                                    ' ~ '
-                                    '${_customRange!.end.year}.${_customRange!.end.month.toString().padLeft(2, '0')}.${_customRange!.end.day.toString().padLeft(2, '0')}'
-                                  : '날짜 범위 선택',
-                              style: TextStyle(fontSize: 13, color: primary),
-                            ),
-                          ],
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 10),
+                          child: Text('~',
+                              style: TextStyle(
+                                  fontSize: 16, color: Colors.black38)),
                         ),
-                      ),
+                        Expanded(
+                          child: _DateField(
+                            label: '종료일',
+                            date: _customRange?.end,
+                            onTap: () async {
+                              final picked = await showQuickDatePicker(
+                                context,
+                                initialDate: _customRange?.end ??
+                                    _customRange?.start ??
+                                    DateTime.now(),
+                                firstDate: _customRange?.start,
+                              );
+                              if (picked != null) {
+                                setState(() {
+                                  final start = _customRange?.start ?? picked;
+                                  _customRange =
+                                      DateTimeRange(start: start, end: picked);
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ],
 
@@ -774,6 +833,59 @@ class _PeriodOption extends StatelessWidget {
                 selected ? FontWeight.w600 : FontWeight.normal,
             color: selected ? primary : Colors.black54,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Date field ────────────────────────────────────────────────────────────────
+
+class _DateField extends StatelessWidget {
+  final String label;
+  final DateTime? date;
+  final VoidCallback onTap;
+
+  const _DateField({
+    required this.label,
+    required this.date,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final hasDate = date != null;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          border: Border.all(color: hasDate ? primary : Colors.black12),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                  fontSize: 10,
+                  color: hasDate ? primary : Colors.black38),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              hasDate
+                  ? '${date!.year}.${date!.month.toString().padLeft(2, '0')}.${date!.day.toString().padLeft(2, '0')}'
+                  : '날짜 선택',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: hasDate ? FontWeight.w600 : FontWeight.normal,
+                color: hasDate ? primary : Colors.black38,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -924,57 +1036,63 @@ class _SummaryBanner extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF4361EE).withValues(alpha: 0.35),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF4361EE).withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(22),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-            '잔액',
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.white.withValues(alpha: 0.65),
-              fontWeight: FontWeight.w500,
+          Expanded(
+            flex: 5,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '잔액',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.white.withValues(alpha: 0.65),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${isPositive ? '+' : '-'}${formatCurrency(balance.abs())}원',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: isPositive ? Colors.white : const Color(0xFFFFB3BA),
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            '${isPositive ? '+' : '-'}${formatCurrency(balance.abs())}원',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: isPositive ? Colors.white : const Color(0xFFFFB3BA),
-            ),
+          Container(
+            width: 1,
+            height: 32,
+            color: Colors.white.withValues(alpha: 0.2),
+            margin: const EdgeInsets.symmetric(horizontal: 12),
           ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: _BannerItem(
-                  icon: Icons.arrow_downward_rounded,
-                  label: '수입',
-                  amount: income,
-                  color: const Color(0xFFA8D8EA),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _BannerItem(
-                  icon: Icons.arrow_upward_rounded,
-                  label: '지출',
-                  amount: expense,
-                  color: const Color(0xFFFFB3BA),
-                ),
-              ),
-            ],
+          Expanded(
+            flex: 4,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _BannerItem(sign: '+', label: '수입', amount: income,
+                    color: const Color(0xFFA8D8EA)),
+                const SizedBox(height: 6),
+                _BannerItem(sign: '-', label: '지출', amount: expense,
+                    color: const Color(0xFFFFB3BA)),
+              ],
+            ),
           ),
         ],
       ),
@@ -983,13 +1101,13 @@ class _SummaryBanner extends StatelessWidget {
 }
 
 class _BannerItem extends StatelessWidget {
-  final IconData icon;
+  final String sign;
   final String label;
   final int amount;
   final Color color;
 
   const _BannerItem({
-    required this.icon,
+    required this.sign,
     required this.label,
     required this.amount,
     required this.color,
@@ -997,45 +1115,29 @@ class _BannerItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: 16),
+    return Row(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.white.withValues(alpha: 0.6),
+            fontWeight: FontWeight.w500,
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.white.withValues(alpha: 0.65))),
-                Text(
-                  '${formatCurrency(amount)}원',
-                  style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            '${formatCurrency(amount)}원',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
             ),
+            overflow: TextOverflow.ellipsis,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -1053,8 +1155,13 @@ const _kUserColors = [
 class _UserSection extends StatelessWidget {
   final Map<String, int> userMap;
   final int total;
+  final void Function(String nickname, Color color) onTapUser;
 
-  const _UserSection({required this.userMap, required this.total});
+  const _UserSection({
+    required this.userMap,
+    required this.total,
+    required this.onTapUser,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1081,6 +1188,10 @@ class _UserSection extends StatelessWidget {
               total: total,
               maxAmount: maxAmount,
               color: _kUserColors[i % _kUserColors.length],
+              onTap: () => onTapUser(
+                userMap.entries.elementAt(i).key,
+                _kUserColors[i % _kUserColors.length],
+              ),
             ),
             if (i < userMap.length - 1) const SizedBox(height: 16),
           ],
@@ -1096,6 +1207,7 @@ class _UserRow extends StatelessWidget {
   final int total;
   final int maxAmount;
   final Color color;
+  final VoidCallback onTap;
 
   const _UserRow({
     required this.nickname,
@@ -1103,6 +1215,7 @@ class _UserRow extends StatelessWidget {
     required this.total,
     required this.maxAmount,
     required this.color,
+    required this.onTap,
   });
 
   @override
@@ -1110,7 +1223,10 @@ class _UserRow extends StatelessWidget {
     final ratio = maxAmount > 0 ? amount / maxAmount : 0.0;
     final percent = total > 0 ? (amount / total * 100).toStringAsFixed(1) : '0.0';
 
-    return Column(
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Column(
       children: [
         Row(
           children: [
@@ -1140,6 +1256,8 @@ class _UserRow extends StatelessWidget {
                         fontSize: 11, color: Colors.black38)),
               ],
             ),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right, size: 18, color: Colors.black26),
           ],
         ),
         const SizedBox(height: 8),
@@ -1153,6 +1271,7 @@ class _UserRow extends StatelessWidget {
           ),
         ),
       ],
+      ),
     );
   }
 }
@@ -1202,11 +1321,7 @@ class _CategorySection extends StatelessWidget {
               icon: iconMap[catMap.entries.elementAt(i).key] ?? Icons.more_horiz,
               onTap: () => onTapCategory(catMap.entries.elementAt(i).key),
             ),
-            if (i < catMap.length - 1) ...[
-              const SizedBox(height: 12),
-              const Divider(height: 1),
-              const SizedBox(height: 12),
-            ],
+            if (i < catMap.length - 1) const SizedBox(height: 16),
           ],
         ],
       ),
