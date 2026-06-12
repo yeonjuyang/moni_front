@@ -50,7 +50,7 @@ class _AssetTabState extends State<AssetTab> {
         leading: const SizedBox.shrink(),
         leadingWidth: 48,
         centerTitle: true,
-        title: const Text('자산', style: TextStyle(fontWeight: FontWeight.w700)),
+        title: const Text('자산', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
         elevation: 0,
         actions: [
           IconButton(

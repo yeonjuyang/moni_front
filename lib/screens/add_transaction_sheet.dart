@@ -163,6 +163,63 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     if (picked != null) setState(() => _selectedDate = picked);
   }
 
+  void _resetForm() {
+    _titleController.clear();
+    _noteController.clear();
+    setState(() {
+      _amount = 0;
+      _showCalculator = false;
+    });
+  }
+
+  Future<void> _saveAndContinue() async {
+    final title = _titleController.text.trim();
+    if (title.isEmpty || _amount <= 0) return;
+
+    if (_assets.isNotEmpty && _selectedAssetId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('자산을 선택해주세요')),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      final selectedUser = _users.where((u) => u.userId == _selectedUserId).firstOrNull;
+      final draft = Transaction(
+        id: '',
+        title: title,
+        amount: _amount,
+        type: _type,
+        date: _selectedDate,
+        category: _selectedCategory,
+        paidByUserId: _selectedUserId,
+        paidByUserNickname: selectedUser?.nickname,
+        note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
+      );
+
+      final saved = await TransactionService.createTransaction(
+        ledgerId: widget.ledgerId,
+        transaction: draft,
+        fromAssetId: _type == TransactionType.expense ? _selectedAssetId : null,
+        toAssetId: _type == TransactionType.income ? _selectedAssetId : null,
+      );
+
+      widget.onSave(saved);
+      if (mounted) {
+        setState(() => _isSaving = false);
+        _resetForm();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('저장 실패: $e')));
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
   Future<void> _save() async {
     final title = _titleController.text.trim();
     if (title.isEmpty || _amount <= 0) return;
@@ -483,22 +540,57 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               ),
             const SizedBox(height: 20),
 
-            // 저장
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: FilledButton(
-                onPressed: _isSaving ? null : _save,
-                child: _isSaving
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
-                    : Text(_isEditing ? '수정' : '저장',
-                        style: const TextStyle(fontSize: 16)),
+            // 저장 / 계속
+            if (_isEditing)
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: FilledButton(
+                  onPressed: _isSaving ? null : _save,
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : const Text('수정', style: TextStyle(fontSize: 16)),
+                ),
+              )
+            else
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: SizedBox(
+                      height: 52,
+                      child: FilledButton(
+                        onPressed: _isSaving ? null : _save,
+                        child: _isSaving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white))
+                            : const Text('저장',
+                                style: TextStyle(fontSize: 16)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: SizedBox(
+                      height: 52,
+                      child: FilledButton.tonal(
+                        onPressed: _isSaving ? null : _saveAndContinue,
+                        child: const Text('계속',
+                            style: TextStyle(fontSize: 16)),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
           ],
         ),
       ),

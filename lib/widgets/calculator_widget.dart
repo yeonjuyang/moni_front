@@ -280,8 +280,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
   double _fontSize(String l) {
     if (l == '확인') return 15;
     if (l == '지움') return 13;
-    if (l == '000' || l == '00') return 17;
-    return 21;
+    return 20;
   }
 }
 
