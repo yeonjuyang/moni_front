@@ -65,6 +65,19 @@ class AuthService {
     await _saveSession(jwt: jwt, provider: 'kakao');
   }
 
+  // 카카오/네이버 개발자 앱 키 발급 전까지 사용하는 임시 로그인.
+  // data.sql에 미리 심어둔 테스트 계정(test@test.com, partner@test.com)으로 로그인해
+  // 공유 가계부 등 다중 사용자 흐름을 미리 검증할 수 있다.
+  static Future<void> loginDev({required String email, required String nickname}) async {
+    final response = await _dio.post(
+      '/api/auth/dev-login',
+      data: {'email': email, 'nickname': nickname},
+    );
+
+    final jwt = response.data['token'] as String;
+    await _saveSession(jwt: jwt, provider: 'dev');
+  }
+
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     final provider = prefs.getString('login_provider');

@@ -41,6 +41,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
 
   List<AssetModel> _assets = [];
   int? _selectedAssetId;
+  int? _selectedToAssetId;
   bool _isLoadingAssets = true;
 
   List<UserModel> _users = [];
@@ -91,12 +92,19 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
           _assets = assets;
           if (_isEditing) {
             final e = widget.editing!;
-            final originalId = e.type == TransactionType.expense
-                ? e.fromAssetId
-                : e.toAssetId;
-            _selectedAssetId = originalId ?? (assets.isNotEmpty ? assets.first.assetId : null);
+            if (e.type == TransactionType.transfer) {
+              _selectedAssetId = e.fromAssetId ?? (assets.isNotEmpty ? assets.first.assetId : null);
+              _selectedToAssetId = e.toAssetId ??
+                  (assets.length > 1 ? assets[1].assetId : null);
+            } else {
+              final originalId = e.type == TransactionType.expense
+                  ? e.fromAssetId
+                  : e.toAssetId;
+              _selectedAssetId = originalId ?? (assets.isNotEmpty ? assets.first.assetId : null);
+            }
           } else {
             if (assets.isNotEmpty) _selectedAssetId = assets.first.assetId;
+            if (assets.length > 1) _selectedToAssetId = assets[1].assetId;
           }
           _isLoadingAssets = false;
         });
@@ -144,14 +152,37 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     }
   }
 
-  List<CategoryModel> get _categories =>
-      _type == TransactionType.expense ? _expenseCategories : _incomeCategories;
+  List<CategoryModel> get _categories {
+    if (_type == TransactionType.transfer) return [];
+    return _type == TransactionType.expense ? _expenseCategories : _incomeCategories;
+  }
+
+  int? get _computedFromAssetId => switch (_type) {
+        TransactionType.expense || TransactionType.transfer => _selectedAssetId,
+        TransactionType.income => null,
+      };
+
+  int? get _computedToAssetId => switch (_type) {
+        TransactionType.income => _selectedAssetId,
+        TransactionType.transfer => _selectedToAssetId,
+        TransactionType.expense => null,
+      };
 
   void _onTypeChanged(TransactionType type) {
     setState(() {
       _type = type;
-      final cats = type == TransactionType.expense ? _expenseCategories : _incomeCategories;
-      _selectedCategory = cats.isNotEmpty ? cats.first.categoryName : '';
+      if (type == TransactionType.transfer) {
+        _selectedCategory = '';
+        if (_selectedToAssetId == null || _selectedToAssetId == _selectedAssetId) {
+          _selectedToAssetId = _assets
+              .where((a) => a.assetId != _selectedAssetId)
+              .map((a) => a.assetId)
+              .firstOrNull;
+        }
+      } else {
+        final cats = type == TransactionType.expense ? _expenseCategories : _incomeCategories;
+        _selectedCategory = cats.isNotEmpty ? cats.first.categoryName : '';
+      }
     });
   }
 
@@ -175,13 +206,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   Future<void> _saveAndContinue() async {
     final title = _titleController.text.trim();
     if (title.isEmpty || _amount <= 0) return;
-
-    if (_assets.isNotEmpty && _selectedAssetId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('자산을 선택해주세요')),
-      );
-      return;
-    }
+    if (!_validateAssets()) return;
 
     setState(() => _isSaving = true);
 
@@ -193,7 +218,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         amount: _amount,
         type: _type,
         date: _selectedDate,
-        category: _selectedCategory,
+        category: _type == TransactionType.transfer ? '이체' : _selectedCategory,
         paidByUserId: _selectedUserId,
         paidByUserNickname: selectedUser?.nickname,
         note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
@@ -202,8 +227,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       final saved = await TransactionService.createTransaction(
         ledgerId: widget.ledgerId,
         transaction: draft,
-        fromAssetId: _type == TransactionType.expense ? _selectedAssetId : null,
-        toAssetId: _type == TransactionType.income ? _selectedAssetId : null,
+        fromAssetId: _computedFromAssetId,
+        toAssetId: _computedToAssetId,
       );
 
       widget.onSave(saved);
@@ -220,16 +245,36 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     }
   }
 
-  Future<void> _save() async {
-    final title = _titleController.text.trim();
-    if (title.isEmpty || _amount <= 0) return;
+  bool _validateAssets() {
+    if (_type == TransactionType.transfer) {
+      if (_selectedAssetId == null || _selectedToAssetId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('출금 자산과 입금 자산을 선택해주세요')),
+        );
+        return false;
+      }
+      if (_selectedAssetId == _selectedToAssetId) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('출금 자산과 입금 자산은 달라야 해요')),
+        );
+        return false;
+      }
+      return true;
+    }
 
     if (_assets.isNotEmpty && _selectedAssetId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('자산을 선택해주세요')),
       );
-      return;
+      return false;
     }
+    return true;
+  }
+
+  Future<void> _save() async {
+    final title = _titleController.text.trim();
+    if (title.isEmpty || _amount <= 0) return;
+    if (!_validateAssets()) return;
 
     setState(() => _isSaving = true);
 
@@ -241,7 +286,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         amount: _amount,
         type: _type,
         date: _selectedDate,
-        category: _selectedCategory,
+        category: _type == TransactionType.transfer ? '이체' : _selectedCategory,
         paidByUserId: _selectedUserId,
         paidByUserNickname: selectedUser?.nickname,
         note: _noteController.text.trim().isEmpty
@@ -255,15 +300,15 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
           ledgerId: widget.ledgerId,
           transactionId: widget.editing!.id,
           transaction: draft,
-          fromAssetId: _type == TransactionType.expense ? _selectedAssetId : null,
-          toAssetId: _type == TransactionType.income ? _selectedAssetId : null,
+          fromAssetId: _computedFromAssetId,
+          toAssetId: _computedToAssetId,
         );
       } else {
         saved = await TransactionService.createTransaction(
           ledgerId: widget.ledgerId,
           transaction: draft,
-          fromAssetId: _type == TransactionType.expense ? _selectedAssetId : null,
-          toAssetId: _type == TransactionType.income ? _selectedAssetId : null,
+          fromAssetId: _computedFromAssetId,
+          toAssetId: _computedToAssetId,
         );
       }
 
@@ -412,6 +457,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                       value: TransactionType.expense, label: Text('지출')),
                   ButtonSegment(
                       value: TransactionType.income, label: Text('수입')),
+                  ButtonSegment(
+                      value: TransactionType.transfer, label: Text('이체')),
                 ],
                 selected: {_type},
                 onSelectionChanged: (s) => _onTypeChanged(s.first),
@@ -503,42 +550,44 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             _buildPersonSection(),
             const SizedBox(height: 16),
 
-            // 카테고리
-            const Text('카테고리',
-                style: TextStyle(fontSize: 13, color: Colors.black54)),
-            const SizedBox(height: 8),
-            if (_isLoadingCategories)
-              const SizedBox(
-                height: 36,
-                child: Row(children: [
-                  SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2)),
-                  SizedBox(width: 8),
-                  Text('카테고리 불러오는 중...', style: TextStyle(color: Colors.black38)),
-                ]),
-              )
-            else if (_categories.isEmpty)
-              const Text('카테고리가 없어요. 설정에서 먼저 추가해주세요.',
-                  style: TextStyle(fontSize: 13, color: Colors.black38))
-            else
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: _categories.map((c) {
-                  final isSelected = _selectedCategory == c.categoryName;
-                  return ChoiceChip(
-                    avatar: Icon(c.icon, size: 14,
-                        color: isSelected ? null : c.color),
-                    label: Text(c.categoryName),
-                    selected: isSelected,
-                    onSelected: (_) =>
-                        setState(() => _selectedCategory = c.categoryName),
-                  );
-                }).toList(),
-              ),
-            const SizedBox(height: 20),
+            // 카테고리 (이체는 카테고리 없음)
+            if (_type != TransactionType.transfer) ...[
+              const Text('카테고리',
+                  style: TextStyle(fontSize: 13, color: Colors.black54)),
+              const SizedBox(height: 8),
+              if (_isLoadingCategories)
+                const SizedBox(
+                  height: 36,
+                  child: Row(children: [
+                    SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2)),
+                    SizedBox(width: 8),
+                    Text('카테고리 불러오는 중...', style: TextStyle(color: Colors.black38)),
+                  ]),
+                )
+              else if (_categories.isEmpty)
+                const Text('카테고리가 없어요. 설정에서 먼저 추가해주세요.',
+                    style: TextStyle(fontSize: 13, color: Colors.black38))
+              else
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: _categories.map((c) {
+                    final isSelected = _selectedCategory == c.categoryName;
+                    return ChoiceChip(
+                      avatar: Icon(c.icon, size: 14,
+                          color: isSelected ? null : c.color),
+                      label: Text(c.categoryName),
+                      selected: isSelected,
+                      onSelected: (_) =>
+                          setState(() => _selectedCategory = c.categoryName),
+                    );
+                  }).toList(),
+                ),
+              const SizedBox(height: 20),
+            ],
 
             // 저장 / 계속
             if (_isEditing)
@@ -598,8 +647,6 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   }
 
   Widget _buildAssetSection() {
-    final label = _type == TransactionType.expense ? '출금 자산' : '입금 자산';
-
     if (_isLoadingAssets) {
       return const SizedBox(
         height: 36,
@@ -615,6 +662,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     }
 
     if (_assets.isEmpty) {
+      final label = _type == TransactionType.income ? '입금 자산' : '출금 자산';
       return Row(
         children: [
           const Icon(Icons.info_outline, size: 16, color: Colors.black38),
@@ -625,6 +673,38 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       );
     }
 
+    if (_type == TransactionType.transfer) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _assetPicker(
+            label: '출금 자산',
+            selectedId: _selectedAssetId,
+            onSelected: (id) => setState(() => _selectedAssetId = id),
+          ),
+          const SizedBox(height: 14),
+          _assetPicker(
+            label: '입금 자산',
+            selectedId: _selectedToAssetId,
+            onSelected: (id) => setState(() => _selectedToAssetId = id),
+          ),
+        ],
+      );
+    }
+
+    final label = _type == TransactionType.expense ? '출금 자산' : '입금 자산';
+    return _assetPicker(
+      label: label,
+      selectedId: _selectedAssetId,
+      onSelected: (id) => setState(() => _selectedAssetId = id),
+    );
+  }
+
+  Widget _assetPicker({
+    required String label,
+    required int? selectedId,
+    required ValueChanged<int?> onSelected,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -638,9 +718,8 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             return ChoiceChip(
               avatar: Icon(asset.icon, size: 16),
               label: Text(asset.assetName),
-              selected: _selectedAssetId == asset.assetId,
-              onSelected: (_) =>
-                  setState(() => _selectedAssetId = asset.assetId),
+              selected: selectedId == asset.assetId,
+              onSelected: (_) => onSelected(asset.assetId),
             );
           }).toList(),
         ),

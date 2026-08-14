@@ -251,6 +251,7 @@ class _CalendarSection extends StatelessWidget {
   Map<int, (int, int)> get _dailyTotals {
     final map = <int, (int, int)>{};
     for (final t in transactions) {
+      if (t.type == TransactionType.transfer) continue;
       final d = t.date.day;
       final cur = map[d] ?? (0, 0);
       map[d] = t.type == TransactionType.income
@@ -649,6 +650,7 @@ class _TransactionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isExpense = transaction.type == TransactionType.expense;
+    final isTransfer = transaction.type == TransactionType.transfer;
     final color = categoryColors[transaction.category] ?? Colors.grey;
     final icon = categoryIcons[transaction.category] ?? Icons.circle;
 
@@ -697,13 +699,17 @@ class _TransactionTile extends StatelessWidget {
               ),
             ),
             Text(
-              '${isExpense ? '-' : '+'}${formatCurrency(transaction.amount)}원',
+              isTransfer
+                  ? '${formatCurrency(transaction.amount)}원'
+                  : '${isExpense ? '-' : '+'}${formatCurrency(transaction.amount)}원',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: isExpense
-                    ? const Color(0xFFE17055)
-                    : const Color(0xFF4361EE),
+                color: isTransfer
+                    ? Colors.black54
+                    : isExpense
+                        ? const Color(0xFFE17055)
+                        : const Color(0xFF4361EE),
               ),
             ),
           ],

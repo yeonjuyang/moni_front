@@ -145,7 +145,8 @@ class _StatsTabState extends State<StatsTab> {
       .fold(0, (s, t) => s + t.amount);
 
   Map<String, int> _userMap(TransactionType type) {
-    final map = <String, int>{};
+    // 결제자가 없어도 가계부 멤버 전원을 0원으로 먼저 채워서, 지출이 없는 사람도 항상 보이게 한다.
+    final map = <String, int>{for (final u in _users) u.nickname: 0};
     for (final t in _baseTransactions.where((t) => t.type == type)) {
       final name = t.paidByUserNickname ?? '알 수 없음';
       map[name] = (map[name] ?? 0) + t.amount;
@@ -155,7 +156,13 @@ class _StatsTabState extends State<StatsTab> {
   }
 
   Map<String, int> _categoryMap(TransactionType type) {
-    final map = <String, int>{};
+    // 거래가 없는 카테고리도 0원으로 먼저 채워서, 지출/수입이 없어도 항상 보이게 한다.
+    final typeStr = type == TransactionType.expense ? 'EXPENSE' : 'INCOME';
+    final orderedCategories = _categories.values
+        .where((c) => c.categoryType == typeStr)
+        .toList()
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    final map = <String, int>{for (final c in orderedCategories) c.categoryName: 0};
     for (final t in _baseTransactions.where((t) => t.type == type)) {
       map[t.category] = (map[t.category] ?? 0) + t.amount;
     }
@@ -323,6 +330,7 @@ class _StatsTabState extends State<StatsTab> {
   @override
   Widget build(BuildContext context) {
     final catMap = _categoryMap(_selectedType);
+    final userMap = _userMap(_selectedType);
     final total =
         _selectedType == TransactionType.expense ? _totalExpense : _totalIncome;
     final colorMap = {for (final cat in catMap.keys) cat: _catColor(cat)};
@@ -387,21 +395,7 @@ class _StatsTabState extends State<StatsTab> {
           ),
         ],
       ),
-      body: _baseTransactions.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.bar_chart_outlined,
-                      size: 56,
-                      color: Colors.black.withValues(alpha: 0.15)),
-                  const SizedBox(height: 12),
-                  const Text('해당 기간의 내역이 없어요',
-                      style: TextStyle(color: Colors.black38, fontSize: 15)),
-                ],
-              ),
-            )
-          : ListView(
+      body: ListView(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
               children: [
                 _SummaryBanner(income: _totalIncome, expense: _totalExpense),
@@ -432,27 +426,23 @@ class _StatsTabState extends State<StatsTab> {
                     colorMap: colorMap,
                     iconMap: iconMap,
                   ),
-                  ...() {
-                    final userMap = _userMap(_selectedType);
-                    if (userMap.length < 2) return <Widget>[];
-                    return [
-                      const SizedBox(height: 24),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 4, bottom: 10),
-                        child: Text(
-                          '사용자별 ${_selectedType == TransactionType.expense ? '지출' : '수입'}',
-                          style: const TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w700),
-                        ),
+                  if (userMap.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 10),
+                      child: Text(
+                        '사용자별 ${_selectedType == TransactionType.expense ? '지출' : '수입'}',
+                        style: const TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w700),
                       ),
-                      _UserSection(
-                        userMap: userMap,
-                        total: total,
-                        onTapUser: (nickname, color) =>
-                            _openUserDetail(nickname, color),
-                      ),
-                    ];
-                  }(),
+                    ),
+                    _UserSection(
+                      userMap: userMap,
+                      total: total,
+                      onTapUser: (nickname, color) =>
+                          _openUserDetail(nickname, color),
+                    ),
+                  ],
                 ] else
                   Padding(
                     padding: const EdgeInsets.only(top: 40),
@@ -464,8 +454,8 @@ class _StatsTabState extends State<StatsTab> {
                         const SizedBox(height: 12),
                         Text(
                           _selectedType == TransactionType.expense
-                              ? '지출 내역이 없어요'
-                              : '수입 내역이 없어요',
+                              ? '지출 카테고리가 없어요. 설정에서 먼저 추가해주세요.'
+                              : '수입 카테고리가 없어요. 설정에서 먼저 추가해주세요.',
                           style: const TextStyle(
                               color: Colors.black38, fontSize: 15),
                         ),
@@ -1350,7 +1340,7 @@ class _CategoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ratio = amount / maxAmount;
+    final ratio = maxAmount > 0 ? amount / maxAmount : 0.0;
     final percent =
         total > 0 ? (amount / total * 100).toStringAsFixed(1) : '0.0';
 

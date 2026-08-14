@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../models/asset.dart';
+import '../../models/transaction.dart';
 import '../../services/asset_service.dart';
 import '../../utils/formatters.dart';
+import '../asset_detail_screen.dart';
 import '../asset_settings_screen.dart';
 
 class AssetTab extends StatefulWidget {
   final int ledgerId;
+  final List<Transaction> transactions;
 
-  const AssetTab({super.key, required this.ledgerId});
+  const AssetTab({super.key, required this.ledgerId, required this.transactions});
 
   @override
   State<AssetTab> createState() => _AssetTabState();
@@ -40,6 +43,19 @@ class _AssetTabState extends State<AssetTab> {
   }
 
   int get _totalBalance => _assets.fold(0, (s, a) => s + a.balance);
+
+  void _openAssetDetail(AssetModel asset) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AssetDetailScreen(
+          asset: asset,
+          transactions: widget.transactions,
+          allAssets: _assets,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +159,10 @@ class _AssetTabState extends State<AssetTab> {
           child: Column(
             children: [
               for (int i = 0; i < list.length; i++) ...[
-                _AssetRow(asset: list[i]),
+                _AssetRow(
+                  asset: list[i],
+                  onTap: () => _openAssetDetail(list[i]),
+                ),
                 if (i < list.length - 1)
                   const Divider(height: 1, indent: 60, endIndent: 16),
               ],
@@ -209,37 +228,43 @@ class _TotalBalanceCard extends StatelessWidget {
 
 class _AssetRow extends StatelessWidget {
   final AssetModel asset;
+  final VoidCallback onTap;
 
-  const _AssetRow({required this.asset});
+  const _AssetRow({required this.asset, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     const color = Color(0xFF4361EE);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(asset.icon, color: color, size: 20),
             ),
-            child: Icon(asset.icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              asset.assetName,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                asset.assetName,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+              ),
             ),
-          ),
-          Text(
-            '${formatCurrency(asset.balance)}원',
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-          ),
-        ],
+            Text(
+              '${formatCurrency(asset.balance)}원',
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right, size: 18, color: Colors.black26),
+          ],
+        ),
       ),
     );
   }

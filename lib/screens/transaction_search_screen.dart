@@ -93,6 +93,10 @@ class _TransactionSearchScreenState extends State<TransactionSearchScreen> {
     }
     if (f.assetIds.isNotEmpty) {
       list = list.where((t) {
+        if (t.type == TransactionType.transfer) {
+          return (t.fromAssetId != null && f.assetIds.contains(t.fromAssetId)) ||
+              (t.toAssetId != null && f.assetIds.contains(t.toAssetId));
+        }
         final id = t.type == TransactionType.expense
             ? t.fromAssetId
             : t.toAssetId;
@@ -370,10 +374,14 @@ class _SearchTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = transaction;
     final isExpense = t.type == TransactionType.expense;
+    final isTransfer = t.type == TransactionType.transfer;
     final color = categoryColors[t.category] ?? Colors.grey;
     final icon = categoryIcons[t.category] ?? Icons.circle;
-    final amountColor =
-        isExpense ? const Color(0xFFE17055) : const Color(0xFF4361EE);
+    final amountColor = isTransfer
+        ? Colors.black54
+        : isExpense
+            ? const Color(0xFFE17055)
+            : const Color(0xFF4361EE);
 
     return InkWell(
       onTap: onTap,
@@ -423,7 +431,9 @@ class _SearchTile extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              '${isExpense ? '-' : '+'}${formatCurrency(t.amount)}원',
+              isTransfer
+                  ? '${formatCurrency(t.amount)}원'
+                  : '${isExpense ? '-' : '+'}${formatCurrency(t.amount)}원',
               style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,

@@ -87,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
         transactions: _transactions,
         onMonthChanged: _changeMonth,
       ),
-      AssetTab(ledgerId: widget.ledgerId),
+      AssetTab(ledgerId: widget.ledgerId, transactions: _transactions),
       SettingsTab(ledgerId: widget.ledgerId),
     ];
 

@@ -48,14 +48,18 @@ class TransactionService {
   static Map<String, dynamic> _buildBody(
       Transaction t, int? fromAssetId, int? toAssetId) {
     return {
-      'transactionType': t.type == TransactionType.income ? 'INCOME' : 'EXPENSE',
+      'transactionType': switch (t.type) {
+        TransactionType.income => 'INCOME',
+        TransactionType.expense => 'EXPENSE',
+        TransactionType.transfer => 'TRANSFER',
+      },
       'amount': t.amount,
       'memo': t.title,
       'transactionDate':
           '${t.date.year}-'
           '${t.date.month.toString().padLeft(2, '0')}-'
           '${t.date.day.toString().padLeft(2, '0')}',
-      'categoryName': t.category,
+      'categoryName': t.type == TransactionType.transfer ? null : t.category,
       'fromAssetId': fromAssetId,
       'toAssetId': toAssetId,
       'paidByUserId': t.paidByUserId,

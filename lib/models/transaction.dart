@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum TransactionType { income, expense }
+enum TransactionType { income, expense, transfer }
 
 class Transaction {
   final String id;
@@ -30,15 +30,20 @@ class Transaction {
   });
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
+    final type = switch (json['transactionType']) {
+      'INCOME' => TransactionType.income,
+      'TRANSFER' => TransactionType.transfer,
+      _ => TransactionType.expense,
+    };
     return Transaction(
       id: json['id'].toString(),
       title: json['memo'] ?? '',
       amount: (json['amount'] as num).toInt(),
-      type: json['transactionType'] == 'INCOME'
-          ? TransactionType.income
-          : TransactionType.expense,
+      type: type,
       date: DateTime.parse(json['transactionDate']),
-      category: json['categoryName'] ?? '기타',
+      category: type == TransactionType.transfer
+          ? '이체'
+          : (json['categoryName'] ?? '기타'),
       paidByUserId: json['paidByUserId'] != null
           ? (json['paidByUserId'] as num).toInt()
           : null,
@@ -66,6 +71,7 @@ const Map<String, IconData> categoryIcons = {
   '급여': Icons.account_balance_outlined,
   '부업': Icons.work_outline,
   '용돈': Icons.people_outline,
+  '이체': Icons.swap_horiz,
 };
 
 const Map<String, Color> categoryColors = {
@@ -80,6 +86,7 @@ const Map<String, Color> categoryColors = {
   '급여': Color(0xFF26A69A),
   '부업': Color(0xFF42A5F5),
   '용돈': Color(0xFFEF5350),
+  '이체': Color(0xFF8D6E63),
 };
 
 final List<Transaction> mockTransactions = [

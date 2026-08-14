@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
@@ -5,6 +6,9 @@ import '../services/ledger_service.dart';
 import 'home_screen.dart';
 import 'ledger_onboarding_screen.dart';
 import 'ledger_list_screen.dart';
+
+// 카카오/네이버 개발자 앱 키가 발급되면 이 상수를 false로 바꾸거나 제거한다.
+const bool kDevLoginEnabled = kDebugMode;
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -74,6 +78,20 @@ class LoginScreen extends StatelessWidget {
     await prefs.setString('login_provider', provider);
     if (!context.mounted) return;
     await _navigateAfterLogin(context);
+  }
+
+  // 카카오/네이버 개발자 앱 키 발급 전 임시 테스트용 로그인.
+  Future<void> _loginDev(BuildContext context, String email, String nickname) async {
+    try {
+      await AuthService.loginDev(email: email, nickname: nickname);
+      if (!context.mounted) return;
+      await _navigateAfterLogin(context);
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('테스트 로그인 실패: $e')),
+      );
+    }
   }
 
   @override
@@ -211,6 +229,34 @@ class LoginScreen extends StatelessWidget {
                     height: 1.5,
                   ),
                 ),
+
+                if (kDevLoginEnabled) ...[
+                  const SizedBox(height: 24),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '개발 테스트 로그인 (카카오/네이버 키 발급 전 임시)',
+                    style: TextStyle(fontSize: 11, color: Colors.black38),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => _loginDev(context, 'test@test.com', '양씨'),
+                          child: const Text('테스트 계정 1'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => _loginDev(context, 'partner@test.com', '박민준'),
+                          child: const Text('테스트 계정 2'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
