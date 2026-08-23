@@ -73,14 +73,19 @@ class _AssetTabState extends State<AssetTab> {
             icon: const Icon(Icons.tune_outlined),
             tooltip: '자산 관리',
             onPressed: () async {
-              await Navigator.push(
+              final result = await Navigator.push<List<AssetModel>>(
                 context,
                 MaterialPageRoute(
                   builder: (_) =>
                       AssetSettingsScreen(ledgerId: widget.ledgerId),
                 ),
               );
-              _load();
+              if (!mounted) return;
+              if (result != null) {
+                setState(() => _assets = result);
+              } else {
+                _load();
+              }
             },
           ),
         ],
@@ -127,13 +132,17 @@ class _AssetTabState extends State<AssetTab> {
       grouped.putIfAbsent(a.assetType, () => []).add(a);
     }
 
-    final order = ['BANK', 'CASH', 'CARD', 'OTHER'];
+    // 각 타입 그룹의 첫 번째 sortOrder 기준으로 그룹 순서 결정
     final sortedTypes = grouped.keys.toList()
-      ..sort((a, b) => order.indexOf(a).compareTo(order.indexOf(b)));
+      ..sort((a, b) {
+        final minA = grouped[a]!.map((e) => e.sortOrder).reduce((x, y) => x < y ? x : y);
+        final minB = grouped[b]!.map((e) => e.sortOrder).reduce((x, y) => x < y ? x : y);
+        return minA.compareTo(minB);
+      });
 
     final widgets = <Widget>[];
     for (final type in sortedTypes) {
-      final list = grouped[type]!;
+      final list = grouped[type]!..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
       widgets.add(
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 10),

@@ -15,6 +15,7 @@ class AssetSettingsScreen extends StatefulWidget {
 class _AssetSettingsScreenState extends State<AssetSettingsScreen> {
   List<AssetModel> _assets = [];
   bool _isLoading = true;
+  Future<void>? _pendingReorder;
 
   @override
   void initState() {
@@ -71,19 +72,18 @@ class _AssetSettingsScreenState extends State<AssetSettingsScreen> {
 
   Future<void> _onReorder(int oldIndex, int newIndex) async {
     if (newIndex > oldIndex) newIndex--;
+    final original = List<AssetModel>.from(_assets);
     final updated = List<AssetModel>.from(_assets);
     final item = updated.removeAt(oldIndex);
     updated.insert(newIndex, item);
     setState(() => _assets = updated);
-    try {
-      await AssetService.reorderAssets(
-        ledgerId: widget.ledgerId,
-        orderedIds: updated.map((a) => a.assetId).toList(),
-      );
-    } catch (_) {
-      setState(() => _assets = List<AssetModel>.from(_assets)
-        ..insert(oldIndex, updated.removeAt(newIndex)));
-    }
+    _pendingReorder = AssetService.reorderAssets(
+      ledgerId: widget.ledgerId,
+      orderedIds: updated.map((a) => a.assetId).toList(),
+    ).catchError((_) {
+      if (mounted) setState(() => _assets = original);
+    });
+    await _pendingReorder;
   }
 
   Future<void> _delete(AssetModel asset) async {
@@ -120,7 +120,14 @@ class _AssetSettingsScreenState extends State<AssetSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        await _pendingReorder;
+        if (context.mounted) Navigator.pop(context, _assets);
+      },
+      child: Scaffold(
       appBar: AppBar(title: const Text('자산 설정')),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -213,6 +220,7 @@ class _AssetSettingsScreenState extends State<AssetSettingsScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showSheet(),
         child: const Icon(Icons.add),
+      ),
       ),
     );
   }
