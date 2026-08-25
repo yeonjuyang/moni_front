@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/transaction.dart';
 import '../services/transaction_service.dart';
+import '../utils/api_error.dart';
 import 'tabs/ledger_tab.dart';
 import 'tabs/asset_tab.dart';
 import 'tabs/stats_tab.dart';
@@ -37,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('데이터를 불러오지 못했습니다: $e')),
+          SnackBar(content: Text('데이터를 불러오지 못했습니다: ${friendlyError(e)}')),
         );
       }
     }

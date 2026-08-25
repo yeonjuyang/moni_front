@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import '../models/asset.dart';
 import 'api_client.dart';
 
@@ -55,9 +56,12 @@ class AssetService {
     required int ledgerId,
     required List<int> orderedIds,
   }) async {
+    // Dio는 최상위가 리스트인 바디에는 Content-Type을 자동으로 붙이지
+    // 않아서, 명시하지 않으면 서버가 파싱하지 못해 요청이 실패한다.
     await ApiClient.dio.put(
       '/api/ledgers/$ledgerId/assets/reorder',
       data: orderedIds,
+      options: Options(contentType: Headers.jsonContentType),
     );
   }
 }

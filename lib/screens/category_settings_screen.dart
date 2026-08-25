@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/category.dart';
 import '../services/category_service.dart';
+import '../utils/api_error.dart';
 
 class CategorySettingsScreen extends StatefulWidget {
   final int ledgerId;
@@ -111,7 +112,7 @@ class _CategorySettingsScreenState extends State<CategorySettingsScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('삭제 실패: $e')));
+            .showSnackBar(SnackBar(content: Text('삭제 실패: ${friendlyError(e)}')));
       }
     }
   }
@@ -246,7 +247,7 @@ class _CategorySheetState extends State<_CategorySheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('저장 실패: $e')));
+            .showSnackBar(SnackBar(content: Text('저장 실패: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);

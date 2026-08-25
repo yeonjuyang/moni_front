@@ -6,6 +6,14 @@ import '../widgets/month_selector.dart';
 
 enum _Direction { in_, out }
 
+String _withEuro(String word) {
+  if (word.isEmpty) return word;
+  final lastChar = word.codeUnitAt(word.length - 1);
+  if (lastChar < 0xAC00 || lastChar > 0xD7A3) return '$word로';
+  final hasBatchim = (lastChar - 0xAC00) % 28 != 0;
+  return hasBatchim ? '$word으로' : '$word로';
+}
+
 class AssetDetailScreen extends StatefulWidget {
   final AssetModel asset;
   final List<Transaction> transactions;
@@ -182,7 +190,7 @@ class _BalanceCard extends StatelessWidget {
                         fontWeight: FontWeight.w500)),
                 const SizedBox(height: 2),
                 Text(
-                  '${formatCurrency(balance)}원',
+                  '${balance < 0 ? '-' : ''}${formatCurrency(balance)}원',
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
@@ -268,7 +276,7 @@ class _AssetTransactionCard extends StatelessWidget {
     final String subtitle;
     if (t.type == TransactionType.transfer) {
       final other = counterpartName ?? '알 수 없는 자산';
-      subtitle = isIn ? '$other 에서 이체' : '$other 로 이체';
+      subtitle = isIn ? '$other에서 이체' : '${_withEuro(other)} 이체';
     } else if (t.paidByUserNickname != null) {
       subtitle = '${t.category} · ${t.paidByUserNickname}';
     } else {

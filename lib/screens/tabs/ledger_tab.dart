@@ -98,6 +98,7 @@ class _LedgerTabState extends State<LedgerTab> {
         initialDate: _selectedDate ??
             DateTime(widget.currentMonth.year, widget.currentMonth.month),
         onSave: widget.onAddTransaction,
+        transactions: widget.transactions,
       ),
     );
   }
@@ -115,6 +116,7 @@ class _LedgerTabState extends State<LedgerTab> {
         editing: transaction,
         onSave: widget.onUpdateTransaction,
         onDelete: () => widget.onDeleteTransaction(transaction.id),
+        transactions: widget.transactions,
       ),
     );
   }

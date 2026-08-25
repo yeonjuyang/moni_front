@@ -6,6 +6,7 @@ import '../services/asset_service.dart';
 import '../services/category_service.dart';
 import '../services/transaction_service.dart';
 import '../services/user_service.dart';
+import '../utils/api_error.dart';
 import '../utils/formatters.dart';
 import '../widgets/calculator_widget.dart';
 import '../widgets/quick_date_picker.dart';
@@ -16,6 +17,7 @@ class AddTransactionSheet extends StatefulWidget {
   final ValueChanged<Transaction> onSave;
   final Transaction? editing;
   final VoidCallback? onDelete;
+  final List<Transaction> transactions;
 
   const AddTransactionSheet({
     super.key,
@@ -24,6 +26,7 @@ class AddTransactionSheet extends StatefulWidget {
     required this.onSave,
     this.editing,
     this.onDelete,
+    this.transactions = const [],
   });
 
   @override
@@ -70,7 +73,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     } else {
       _type = TransactionType.expense;
       _amount = 0;
-      _selectedDate = DateTime.now();
+      _selectedDate = widget.initialDate;
     }
     _loadAssets();
     _loadUsers();
@@ -157,6 +160,30 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     return _type == TransactionType.expense ? _expenseCategories : _incomeCategories;
   }
 
+  List<String> get _titleSuggestions {
+    final q = _titleController.text.trim().toLowerCase();
+    if (q.isEmpty) return [];
+
+    final freq = <String, int>{};
+    for (final t in widget.transactions) {
+      if (t.type != _type || t.title.isEmpty) continue;
+      freq[t.title] = (freq[t.title] ?? 0) + 1;
+    }
+
+    final matches = freq.entries
+        .where((e) => e.key.toLowerCase().startsWith(q) && e.key.toLowerCase() != q)
+        .toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return matches.take(5).map((e) => e.key).toList();
+  }
+
+  void _applyTitleSuggestion(String suggestion) {
+    _titleController.text = suggestion;
+    _titleController.selection =
+        TextSelection.collapsed(offset: suggestion.length);
+    setState(() {});
+  }
+
   int? get _computedFromAssetId => switch (_type) {
         TransactionType.expense || TransactionType.transfer => _selectedAssetId,
         TransactionType.income => null,
@@ -204,9 +231,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   }
 
   Future<void> _saveAndContinue() async {
-    final title = _titleController.text.trim();
-    if (title.isEmpty || _amount <= 0) return;
+    if (!_validateBasicFields()) return;
     if (!_validateAssets()) return;
+    final title = _titleController.text.trim();
 
     setState(() => _isSaving = true);
 
@@ -239,10 +266,26 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('저장 실패: $e')));
+            .showSnackBar(SnackBar(content: Text('저장 실패: ${friendlyError(e)}')));
         setState(() => _isSaving = false);
       }
     }
+  }
+
+  bool _validateBasicFields() {
+    if (_titleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('내용을 입력해주세요')),
+      );
+      return false;
+    }
+    if (_amount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('금액을 입력해주세요')),
+      );
+      return false;
+    }
+    return true;
   }
 
   bool _validateAssets() {
@@ -272,9 +315,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   }
 
   Future<void> _save() async {
-    final title = _titleController.text.trim();
-    if (title.isEmpty || _amount <= 0) return;
+    if (!_validateBasicFields()) return;
     if (!_validateAssets()) return;
+    final title = _titleController.text.trim();
 
     setState(() => _isSaving = true);
 
@@ -317,7 +360,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('저장 실패: $e')));
+            .showSnackBar(SnackBar(content: Text('저장 실패: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -357,7 +400,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('삭제 실패: $e')));
+            .showSnackBar(SnackBar(content: Text('삭제 실패: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -528,7 +571,23 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                 border: OutlineInputBorder(),
               ),
               textInputAction: TextInputAction.next,
+              onChanged: (_) => setState(() {}),
             ),
+            if (_titleSuggestions.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: _titleSuggestions.map((s) {
+                    return ActionChip(
+                      avatar: const Icon(Icons.history, size: 14),
+                      label: Text(s, style: const TextStyle(fontSize: 13)),
+                      onPressed: () => _applyTitleSuggestion(s),
+                    );
+                  }).toList(),
+                ),
+              ),
             const SizedBox(height: 12),
 
             // 비고 (선택)

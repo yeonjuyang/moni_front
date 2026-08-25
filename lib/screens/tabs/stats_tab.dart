@@ -188,10 +188,22 @@ class _StatsTabState extends State<StatsTab> {
     }
   }
 
+  List<Transaction> get _filteredForDetail {
+    var list = widget.transactions.where((t) => t.type == _selectedType);
+    if (_filter.selectedUserIds.isNotEmpty) {
+      list = list.where((t) =>
+          t.paidByUserId != null &&
+          _filter.selectedUserIds.contains(t.paidByUserId));
+    }
+    if (_filter.excludedCategories.isNotEmpty) {
+      list = list.where((t) => !_filter.excludedCategories.contains(t.category));
+    }
+    return list.toList();
+  }
+
   void _openCategoryDetail(String category) {
-    final transactions = widget.transactions
-        .where((t) => t.type == _selectedType && t.category == category)
-        .toList();
+    final transactions =
+        _filteredForDetail.where((t) => t.category == category).toList();
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -208,9 +220,8 @@ class _StatsTabState extends State<StatsTab> {
   }
 
   void _openUserDetail(String nickname, Color color) {
-    final transactions = widget.transactions
-        .where((t) =>
-            t.type == _selectedType && t.paidByUserNickname == nickname)
+    final transactions = _filteredForDetail
+        .where((t) => t.paidByUserNickname == nickname)
         .toList();
     Navigator.push(
       context,

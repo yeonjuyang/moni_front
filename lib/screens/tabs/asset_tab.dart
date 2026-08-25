@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/asset.dart';
 import '../../models/transaction.dart';
 import '../../services/asset_service.dart';
+import '../../utils/api_error.dart';
 import '../../utils/formatters.dart';
 import '../asset_detail_screen.dart';
 import '../asset_settings_screen.dart';
@@ -38,7 +39,7 @@ class _AssetTabState extends State<AssetTab> {
       if (!mounted) return;
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('자산을 불러오지 못했습니다: $e')));
+          .showSnackBar(SnackBar(content: Text('자산을 불러오지 못했습니다: ${friendlyError(e)}')));
     }
   }
 
@@ -132,13 +133,8 @@ class _AssetTabState extends State<AssetTab> {
       grouped.putIfAbsent(a.assetType, () => []).add(a);
     }
 
-    // 각 타입 그룹의 첫 번째 sortOrder 기준으로 그룹 순서 결정
-    final sortedTypes = grouped.keys.toList()
-      ..sort((a, b) {
-        final minA = grouped[a]!.map((e) => e.sortOrder).reduce((x, y) => x < y ? x : y);
-        final minB = grouped[b]!.map((e) => e.sortOrder).reduce((x, y) => x < y ? x : y);
-        return minA.compareTo(minB);
-      });
+    // 그룹 순서는 자산 종류 기준으로 고정 (현금 → 은행 → 카드 → 기타)
+    final sortedTypes = assetTypes.where(grouped.containsKey).toList();
 
     final widgets = <Widget>[];
     for (final type in sortedTypes) {
@@ -222,7 +218,7 @@ class _TotalBalanceCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '${formatCurrency(totalBalance)}원',
+            '${totalBalance < 0 ? '-' : ''}${formatCurrency(totalBalance)}원',
             style: const TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
@@ -267,7 +263,7 @@ class _AssetRow extends StatelessWidget {
               ),
             ),
             Text(
-              '${formatCurrency(asset.balance)}원',
+              '${asset.balance < 0 ? '-' : ''}${formatCurrency(asset.balance)}원',
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
             ),
             const SizedBox(width: 4),

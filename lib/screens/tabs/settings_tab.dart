@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/ledger.dart';
 import '../../services/auth_service.dart';
 import '../../services/ledger_service.dart';
+import '../../utils/api_error.dart';
 import '../category_settings_screen.dart';
 import '../ledger_onboarding_screen.dart';
 import '../ledger_list_screen.dart';
@@ -66,7 +67,7 @@ class _SettingsTabState extends State<SettingsTab> {
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('가계부 목록을 불러오지 못했습니다: $e')),
+        SnackBar(content: Text('가계부 목록을 불러오지 못했습니다: ${friendlyError(e)}')),
       );
     }
   }

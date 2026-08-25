@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/ledger_service.dart';
+import '../utils/api_error.dart';
 import 'home_screen.dart';
 
 class LedgerCreateScreen extends StatefulWidget {
@@ -23,7 +24,12 @@ class _LedgerCreateScreenState extends State<LedgerCreateScreen> {
 
   Future<void> _create() async {
     final name = _nameController.text.trim();
-    if (name.isEmpty) return;
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('가계부 이름을 입력해주세요')),
+      );
+      return;
+    }
 
     setState(() => _isSaving = true);
     try {
@@ -42,7 +48,7 @@ class _LedgerCreateScreenState extends State<LedgerCreateScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('생성 실패: $e')));
+            .showSnackBar(SnackBar(content: Text('생성 실패: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);

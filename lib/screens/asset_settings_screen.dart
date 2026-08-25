@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/asset.dart';
 import '../services/asset_service.dart';
+import '../utils/api_error.dart';
 import '../utils/formatters.dart';
 import '../widgets/calculator_widget.dart';
 
@@ -70,12 +71,45 @@ class _AssetSettingsScreenState extends State<AssetSettingsScreen> {
     );
   }
 
-  Future<void> _onReorder(int oldIndex, int newIndex) async {
-    if (newIndex > oldIndex) newIndex--;
+  Map<String, List<AssetModel>> get _groupedAssets {
+    final grouped = <String, List<AssetModel>>{};
+    for (final a in _assets) {
+      grouped.putIfAbsent(a.assetType, () => []).add(a);
+    }
+    return grouped;
+  }
+
+  // 같은 종류(현금/은행/카드) 안에서만 이웃과 순서를 맞바꾼다.
+  // 드래그 기반 재정렬(SliverReorderableList)은 그룹별로 분리된 리스트를
+  // 하나의 CustomScrollView에 두면 드래그가 인식되지 않거나 항목이
+  // 사라지는 등 불안정해서, 훨씬 안정적인 위/아래 버튼 방식으로 대체했다.
+  Future<void> _moveWithinType(String type, int index, int delta) async {
+    final grouped = _groupedAssets;
+    final group = List<AssetModel>.from(grouped[type]!);
+    final newIndex = index + delta;
+    if (newIndex < 0 || newIndex >= group.length) return;
+
     final original = List<AssetModel>.from(_assets);
-    final updated = List<AssetModel>.from(_assets);
-    final item = updated.removeAt(oldIndex);
-    updated.insert(newIndex, item);
+    final item = group.removeAt(index);
+    group.insert(newIndex, item);
+    grouped[type] = group;
+
+    final reordered = <AssetModel>[
+      for (final t in assetTypes.where(grouped.containsKey)) ...grouped[t]!,
+    ];
+    // sortOrder 필드도 새 위치에 맞게 다시 매겨야 한다. 배열 순서만 바꾸고
+    // 필드는 그대로 두면, 다른 화면(자산 탭)에서 sortOrder 기준으로 다시
+    // 정렬할 때 원래 순서로 되돌아가 버린다.
+    final updated = <AssetModel>[
+      for (var i = 0; i < reordered.length; i++)
+        AssetModel(
+          assetId: reordered[i].assetId,
+          assetName: reordered[i].assetName,
+          assetType: reordered[i].assetType,
+          balance: reordered[i].balance,
+          sortOrder: i + 1,
+        ),
+    ];
     setState(() => _assets = updated);
     _pendingReorder = AssetService.reorderAssets(
       ledgerId: widget.ledgerId,
@@ -110,7 +144,7 @@ class _AssetSettingsScreenState extends State<AssetSettingsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('삭제 실패: $e')));
+            .showSnackBar(SnackBar(content: Text('삭제 실패: ${friendlyError(e)}')));
       }
     }
   }
@@ -154,7 +188,7 @@ class _AssetSettingsScreenState extends State<AssetSettingsScreen> {
                                     .withValues(alpha: 0.7))),
                         const SizedBox(height: 4),
                         Text(
-                          '${formatCurrency(_totalBalance)}원',
+                          '${_totalBalance < 0 ? '-' : ''}${formatCurrency(_totalBalance)}원',
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -164,55 +198,104 @@ class _AssetSettingsScreenState extends State<AssetSettingsScreen> {
                       ],
                     ),
                   ),
-                // 자산 목록
+                // 자산 목록 (종류별 그룹, 순서 변경은 같은 종류 안에서만)
                 Expanded(
                   child: _assets.isEmpty
                       ? const Center(
                           child: Text('자산이 없어요',
                               style: TextStyle(color: Colors.black38)),
                         )
-                      : ReorderableListView.builder(
+                      : ListView(
                           padding: const EdgeInsets.symmetric(vertical: 8),
-                          itemCount: _assets.length,
-                          onReorder: _onReorder,
-                          itemBuilder: (context, index) {
-                            final asset = _assets[index];
-                            return ListTile(
-                              key: ValueKey(asset.assetId),
-                              leading: CircleAvatar(
-                                backgroundColor: cs.secondaryContainer,
-                                child: Icon(asset.icon,
-                                    color: cs.onSecondaryContainer,
-                                    size: 20),
+                          children: [
+                            for (final type in assetTypes
+                                .where(_groupedAssets.containsKey)) ...[
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+                                child: Text(
+                                  assetTypeLabels[type]!,
+                                  style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.black54),
+                                ),
                               ),
-                              title: Text(asset.assetName),
-                              subtitle: Text(asset.typeLabel,
-                                  style: const TextStyle(fontSize: 12)),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    '${formatCurrency(asset.balance)}원',
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 15),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  IconButton(
-                                    icon: const Icon(Icons.edit_outlined,
-                                        size: 20),
-                                    onPressed: () =>
-                                        _showSheet(editing: asset),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline,
-                                        size: 20, color: Colors.red),
-                                    onPressed: () => _delete(asset),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
+                              for (int index = 0;
+                                  index < _groupedAssets[type]!.length;
+                                  index++)
+                                Builder(builder: (context) {
+                                  final group = _groupedAssets[type]!;
+                                  final asset = group[index];
+                                  return ListTile(
+                                    key: ValueKey(asset.assetId),
+                                    leading: CircleAvatar(
+                                      backgroundColor: cs.secondaryContainer,
+                                      child: Icon(asset.icon,
+                                          color: cs.onSecondaryContainer,
+                                          size: 20),
+                                    ),
+                                    title: Text(asset.assetName),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          '${asset.balance < 0 ? '-' : ''}${formatCurrency(asset.balance)}원',
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 15),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        IconButton(
+                                          icon: const Icon(Icons.edit_outlined,
+                                              size: 20),
+                                          onPressed: () =>
+                                              _showSheet(editing: asset),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete_outline,
+                                              size: 20, color: Colors.red),
+                                          onPressed: () => _delete(asset),
+                                        ),
+                                        Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            SizedBox(
+                                              width: 24,
+                                              height: 22,
+                                              child: IconButton(
+                                                padding: EdgeInsets.zero,
+                                                iconSize: 16,
+                                                icon: const Icon(
+                                                    Icons.keyboard_arrow_up),
+                                                onPressed: index == 0
+                                                    ? null
+                                                    : () => _moveWithinType(
+                                                        type, index, -1),
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              width: 24,
+                                              height: 22,
+                                              child: IconButton(
+                                                padding: EdgeInsets.zero,
+                                                iconSize: 16,
+                                                icon: const Icon(
+                                                    Icons.keyboard_arrow_down),
+                                                onPressed:
+                                                    index == group.length - 1
+                                                        ? null
+                                                        : () => _moveWithinType(
+                                                            type, index, 1),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }),
+                            ],
+                          ],
                         ),
                 ),
               ],
@@ -270,7 +353,7 @@ class _AssetSheetState extends State<_AssetSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('저장 실패: $e')));
+            .showSnackBar(SnackBar(content: Text('저장 실패: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);

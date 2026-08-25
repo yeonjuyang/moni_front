@@ -130,6 +130,29 @@ class _TransactionSearchScreenState extends State<TransactionSearchScreen> {
     return list..sort((a, b) => b.date.compareTo(a.date));
   }
 
+  List<String> get _memoSuggestions {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return [];
+
+    final freq = <String, int>{};
+    for (final t in widget.transactions) {
+      if (t.title.isEmpty) continue;
+      freq[t.title] = (freq[t.title] ?? 0) + 1;
+    }
+
+    final matches = freq.entries
+        .where((e) => e.key.toLowerCase().startsWith(q) && e.key.toLowerCase() != q)
+        .toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return matches.take(5).map((e) => e.key).toList();
+  }
+
+  void _applyMemoSuggestion(String suggestion) {
+    _controller.text = suggestion;
+    _controller.selection = TextSelection.collapsed(offset: suggestion.length);
+    setState(() => _query = suggestion);
+  }
+
   void _openEdit(Transaction t) {
     showModalBottomSheet(
       context: context,
@@ -149,6 +172,7 @@ class _TransactionSearchScreenState extends State<TransactionSearchScreen> {
           widget.onDelete(t.id);
           setState(() {});
         },
+        transactions: widget.transactions,
       ),
     );
   }
@@ -226,6 +250,22 @@ class _TransactionSearchScreenState extends State<TransactionSearchScreen> {
       ),
       body: Column(
         children: [
+          if (_memoSuggestions.isNotEmpty)
+            Container(
+              color: Colors.white,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: _memoSuggestions.map((s) {
+                  return ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.history,
+                        size: 18, color: Colors.black38),
+                    title: Text(s, style: const TextStyle(fontSize: 14)),
+                    onTap: () => _applyMemoSuggestion(s),
+                  );
+                }).toList(),
+              ),
+            ),
           // 활성 필터 요약 바
           if (_filter.isActive)
             _FilterSummaryBar(

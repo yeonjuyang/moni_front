@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/ledger.dart';
 import '../services/ledger_service.dart';
+import '../utils/api_error.dart';
 import 'ledger_onboarding_screen.dart';
 import 'ledger_list_screen.dart';
 
@@ -72,7 +73,7 @@ class _LedgerSettingsScreenState extends State<LedgerSettingsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('저장 실패: $e')));
+            .showSnackBar(SnackBar(content: Text('저장 실패: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -102,7 +103,7 @@ class _LedgerSettingsScreenState extends State<LedgerSettingsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('삭제 실패: $e')));
+            .showSnackBar(SnackBar(content: Text('삭제 실패: ${friendlyError(e)}')));
         setState(() => _isDeleting = false);
       }
     }
@@ -140,7 +141,7 @@ class _LedgerSettingsScreenState extends State<LedgerSettingsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('코드 생성 실패: $e')));
+            .showSnackBar(SnackBar(content: Text('코드 생성 실패: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _isGenerating = false);

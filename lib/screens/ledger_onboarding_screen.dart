@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/ledger_service.dart';
+import '../utils/api_error.dart';
 import 'home_screen.dart';
 import 'ledger_create_screen.dart';
 
@@ -48,7 +49,7 @@ class _LedgerOnboardingScreenState extends State<LedgerOnboardingScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('참여 실패: $e')));
+            .showSnackBar(SnackBar(content: Text('참여 실패: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _isJoining = false);

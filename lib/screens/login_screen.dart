@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import '../services/ledger_service.dart';
+import '../utils/api_error.dart';
 import 'home_screen.dart';
 import 'ledger_onboarding_screen.dart';
 import 'ledger_list_screen.dart';
@@ -54,7 +55,7 @@ class LoginScreen extends StatelessWidget {
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('카카오 로그인 실패: $e')),
+        SnackBar(content: Text('카카오 로그인 실패: ${friendlyError(e)}')),
       );
     }
   }
@@ -67,7 +68,7 @@ class LoginScreen extends StatelessWidget {
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('네이버 로그인 실패: $e')),
+        SnackBar(content: Text('네이버 로그인 실패: ${friendlyError(e)}')),
       );
     }
   }
@@ -89,7 +90,7 @@ class LoginScreen extends StatelessWidget {
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('테스트 로그인 실패: $e')),
+        SnackBar(content: Text('테스트 로그인 실패: ${friendlyError(e)}')),
       );
     }
   }
@@ -100,7 +101,13 @@ class LoginScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFF3A0CA3),
-      body: Column(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Column(
         children: [
           // 상단 컬러 영역
           Expanded(
@@ -261,6 +268,11 @@ class LoginScreen extends StatelessWidget {
             ),
           ),
         ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
