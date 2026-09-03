@@ -3,6 +3,7 @@ import '../services/ledger_service.dart';
 import '../utils/api_error.dart';
 import 'home_screen.dart';
 import 'ledger_create_screen.dart';
+import '../theme/app_colors.dart';
 
 class LedgerOnboardingScreen extends StatefulWidget {
   const LedgerOnboardingScreen({super.key});
@@ -59,7 +60,7 @@ class _LedgerOnboardingScreenState extends State<LedgerOnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF4361EE),
+      backgroundColor: AppColors.primary,
       body: SafeArea(
         child: Column(
           children: [
@@ -110,8 +111,8 @@ class _LedgerOnboardingScreenState extends State<LedgerOnboardingScreen> {
                       icon: const Icon(Icons.group_add_outlined),
                       label: const Text('초대 코드로 참여', style: TextStyle(fontSize: 16)),
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFF4361EE)),
-                        foregroundColor: const Color(0xFF4361EE),
+                        side: const BorderSide(color: AppColors.primary),
+                        foregroundColor: AppColors.primary,
                       ),
                     ),
                   ),
@@ -148,7 +149,7 @@ class _LedgerOnboardingScreenState extends State<LedgerOnboardingScreen> {
                       child: FilledButton(
                         onPressed: _isJoining ? null : _join,
                         style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF4361EE)),
+                            backgroundColor: AppColors.primary),
                         child: _isJoining
                             ? const SizedBox(
                                 width: 20,

@@ -9,6 +9,9 @@ import '../ledger_onboarding_screen.dart';
 import '../ledger_list_screen.dart';
 import '../ledger_settings_screen.dart';
 import '../login_screen.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_shadows.dart';
+import '../../theme/app_radius.dart';
 
 class SettingsTab extends StatefulWidget {
   final int ledgerId;
@@ -114,9 +117,9 @@ class _SettingsTabState extends State<SettingsTab> {
     }[_loginProvider];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF8F9FA),
+        backgroundColor: AppColors.background,
         elevation: 0,
         centerTitle: true,
         title: const Text('설정',
@@ -205,27 +208,8 @@ class _SettingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          for (int i = 0; i < items.length; i++) ...[
-            _SettingsRow(item: items[i]),
-            if (i < items.length - 1)
-              const Divider(height: 1, indent: 52, endIndent: 16),
-          ],
-        ],
-      ),
+    return Column(
+      children: [for (final item in items) _SettingsRow(item: item)],
     );
   }
 }
@@ -259,23 +243,21 @@ class _SettingsRow extends StatelessWidget {
     final color = item.destructive ? Colors.red : Colors.black87;
     final iconBg = item.destructive
         ? Colors.red.withValues(alpha: 0.08)
-        : Colors.black.withValues(alpha: 0.05);
-    final iconColor = item.destructive
-        ? Colors.red
-        : Theme.of(context).colorScheme.primary;
+        : AppColors.primary.withValues(alpha: 0.1);
+    final iconColor = item.destructive ? Colors.red : AppColors.primary;
 
     Widget content = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: iconBg,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
-            child: Icon(item.icon, size: 18, color: iconColor),
+            child: Icon(item.icon, size: 19, color: iconColor),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -300,12 +282,24 @@ class _SettingsRow extends StatelessWidget {
       ),
     );
 
-    if (!item.tappable || item.onTap == null) return content;
-
-    return InkWell(
-      onTap: item.onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: content,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.card,
+      ),
+      child: (!item.tappable || item.onTap == null)
+          ? content
+          : Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              child: InkWell(
+                onTap: item.onTap,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                child: content,
+              ),
+            ),
     );
   }
 }

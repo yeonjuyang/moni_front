@@ -4,6 +4,7 @@ import '../models/detail_period.dart';
 import '../models/transaction.dart';
 import '../utils/formatters.dart';
 import '../widgets/month_selector.dart';
+import '../theme/app_colors.dart';
 
 class UserDetailScreen extends StatefulWidget {
   final String nickname;
@@ -129,13 +130,12 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
     final hasYearData = yearlyTotals.any((v) => v > 0);
     final showChart = widget.period.mode != DetailPeriodMode.custom;
     final isExpense = widget.type == TransactionType.expense;
-    final typeColor =
-        isExpense ? const Color(0xFFE63946) : const Color(0xFF2A9D8F);
+    final typeColor = isExpense ? AppColors.expense : AppColors.income;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF8F9FA),
+        backgroundColor: AppColors.background,
         elevation: 0,
         title: Row(
           mainAxisSize: MainAxisSize.min,

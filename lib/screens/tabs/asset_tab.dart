@@ -6,6 +6,9 @@ import '../../utils/api_error.dart';
 import '../../utils/formatters.dart';
 import '../asset_detail_screen.dart';
 import '../asset_settings_screen.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_shadows.dart';
+import '../../theme/app_radius.dart';
 
 class AssetTab extends StatefulWidget {
   final int ledgerId;
@@ -61,9 +64,9 @@ class _AssetTabState extends State<AssetTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF8F9FA),
+        backgroundColor: AppColors.background,
         leading: const SizedBox.shrink(),
         leadingWidth: 48,
         centerTitle: true,
@@ -148,34 +151,10 @@ class _AssetTabState extends State<AssetTab> {
           ),
         ),
       );
-      widgets.add(
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              for (int i = 0; i < list.length; i++) ...[
-                _AssetRow(
-                  asset: list[i],
-                  onTap: () => _openAssetDetail(list[i]),
-                ),
-                if (i < list.length - 1)
-                  const Divider(height: 1, indent: 60, endIndent: 16),
-              ],
-            ],
-          ),
-        ),
-      );
-      widgets.add(const SizedBox(height: 20));
+      for (final a in list) {
+        widgets.add(_AssetRow(asset: a, onTap: () => _openAssetDetail(a)));
+      }
+      widgets.add(const SizedBox(height: 10));
     }
     return widgets;
   }
@@ -191,18 +170,12 @@ class _TotalBalanceCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF4361EE), Color(0xFF7209B7)],
+          colors: [AppColors.primary, AppColors.primaryDark],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF4361EE).withValues(alpha: 0.35),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.hero(AppColors.primary),
       ),
       padding: const EdgeInsets.all(22),
       child: Column(
@@ -239,36 +212,49 @@ class _AssetRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const color = Color(0xFF4361EE);
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(asset.icon, color: color, size: 20),
+    const color = AppColors.primary;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.card,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: Icon(asset.icon, color: color, size: 20),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    asset.assetName,
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                  ),
+                ),
+                Text(
+                  '${asset.balance < 0 ? '-' : ''}${formatCurrency(asset.balance)}원',
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(width: 4),
+                const Icon(Icons.chevron_right, size: 18, color: Colors.black26),
+              ],
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                asset.assetName,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
-              ),
-            ),
-            Text(
-              '${asset.balance < 0 ? '-' : ''}${formatCurrency(asset.balance)}원',
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(width: 4),
-            const Icon(Icons.chevron_right, size: 18, color: Colors.black26),
-          ],
+          ),
         ),
       ),
     );

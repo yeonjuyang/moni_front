@@ -6,6 +6,7 @@ import '../utils/formatters.dart';
 import '../widgets/calculator_widget.dart';
 import '../widgets/quick_date_picker.dart';
 import 'add_transaction_sheet.dart';
+import '../theme/app_colors.dart';
 
 // ── 필터 모델 ─────────────────────────────────────────────────────────────────
 
@@ -211,9 +212,9 @@ class _TransactionSearchScreenState extends State<TransactionSearchScreen> {
     final hasInput = _filter.isActive || _query.trim().isNotEmpty;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF8F9FA),
+        backgroundColor: AppColors.background,
         elevation: 0,
         titleSpacing: 0,
         title: TextField(
@@ -420,8 +421,8 @@ class _SearchTile extends StatelessWidget {
     final amountColor = isTransfer
         ? Colors.black54
         : isExpense
-            ? const Color(0xFFE17055)
-            : const Color(0xFF4361EE);
+            ? AppColors.expense
+            : AppColors.income;
 
     return InkWell(
       onTap: onTap,
@@ -547,7 +548,7 @@ class _FilterSheetState extends State<_FilterSheet> {
     return Container(
       margin: const EdgeInsets.only(top: 60),
       decoration: const BoxDecoration(
-        color: Color(0xFFF8F9FA),
+        color: AppColors.background,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(

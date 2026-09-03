@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/ledger_service.dart';
 import '../utils/api_error.dart';
 import 'home_screen.dart';
+import '../theme/app_colors.dart';
 
 class LedgerCreateScreen extends StatefulWidget {
   const LedgerCreateScreen({super.key});
@@ -58,7 +59,7 @@ class _LedgerCreateScreenState extends State<LedgerCreateScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF4361EE),
+      backgroundColor: AppColors.primary,
       body: SafeArea(
         child: Column(
           children: [

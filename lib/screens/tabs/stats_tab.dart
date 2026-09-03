@@ -10,6 +10,10 @@ import '../../widgets/month_selector.dart';
 import '../../widgets/quick_date_picker.dart';
 import '../category_detail_screen.dart';
 import '../user_detail_screen.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_shadows.dart';
+import '../../theme/app_radius.dart';
+import '../../widgets/pill_toggle.dart';
 
 // ── Filter config ─────────────────────────────────────────────────────────────
 
@@ -348,9 +352,9 @@ class _StatsTabState extends State<StatsTab> {
     final iconMap = {for (final cat in catMap.keys) cat: _catIcon(cat)};
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF8F9FA),
+        backgroundColor: AppColors.background,
         title: switch (_filter.periodMode) {
           _PeriodMode.yearly => Row(
               mainAxisSize: MainAxisSize.min,
@@ -409,21 +413,21 @@ class _StatsTabState extends State<StatsTab> {
       body: ListView(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
               children: [
-                _SummaryBanner(income: _totalIncome, expense: _totalExpense),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: SegmentedButton<TransactionType>(
-                    segments: const [
-                      ButtonSegment(
-                          value: TransactionType.expense, label: Text('지출')),
-                      ButtonSegment(
-                          value: TransactionType.income, label: Text('수입')),
-                    ],
-                    selected: {_selectedType},
-                    onSelectionChanged: (s) =>
-                        setState(() => _selectedType = s.first),
-                  ),
+                PillToggle(
+                  selectedIndex:
+                      _selectedType == TransactionType.expense ? 0 : 1,
+                  onSelected: (i) => setState(() => _selectedType =
+                      i == 0 ? TransactionType.expense : TransactionType.income),
+                  items: [
+                    PillToggleItem(
+                        label: '지출',
+                        amountText: '${formatCurrency(_totalExpense)}원',
+                        color: AppColors.expense),
+                    PillToggleItem(
+                        label: '수입',
+                        amountText: '${formatCurrency(_totalIncome)}원',
+                        color: AppColors.income),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 _buildActiveFilterChips(),
@@ -954,8 +958,8 @@ class _DonutChart extends StatelessWidget {
             children: catMap.entries.map((e) {
               final color = colorMap[e.key] ?? Colors.grey;
               final pct = total > 0
-                  ? (e.value / total * 100).toStringAsFixed(1)
-                  : '0.0';
+                  ? (e.value / total * 100).round().toString()
+                  : '0';
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1017,136 +1021,10 @@ class _DonutPainter extends CustomPainter {
       old.catMap != catMap || old.total != total;
 }
 
-// ── Summary banner ────────────────────────────────────────────────────────────
-
-class _SummaryBanner extends StatelessWidget {
-  final int income;
-  final int expense;
-
-  const _SummaryBanner({required this.income, required this.expense});
-
-  @override
-  Widget build(BuildContext context) {
-    final balance = income - expense;
-    final isPositive = balance >= 0;
-
-    return Container(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF4361EE), Color(0xFF7209B7)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF4361EE).withValues(alpha: 0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            flex: 5,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '잔액',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.white.withValues(alpha: 0.65),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${isPositive ? '+' : '-'}${formatCurrency(balance.abs())}원',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: isPositive ? Colors.white : const Color(0xFFFFB3BA),
-                    letterSpacing: -0.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            width: 1,
-            height: 32,
-            color: Colors.white.withValues(alpha: 0.2),
-            margin: const EdgeInsets.symmetric(horizontal: 12),
-          ),
-          Expanded(
-            flex: 4,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _BannerItem(sign: '+', label: '수입', amount: income,
-                    color: const Color(0xFFA8D8EA)),
-                const SizedBox(height: 6),
-                _BannerItem(sign: '-', label: '지출', amount: expense,
-                    color: const Color(0xFFFFB3BA)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BannerItem extends StatelessWidget {
-  final String sign;
-  final String label;
-  final int amount;
-  final Color color;
-
-  const _BannerItem({
-    required this.sign,
-    required this.label,
-    required this.amount,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.white.withValues(alpha: 0.6),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            '${formatCurrency(amount)}원',
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 // ── User stats ────────────────────────────────────────────────────────────────
 
 const _kUserColors = [
-  Color(0xFF4361EE),
+  AppColors.primary,
   Color(0xFFE63946),
   Color(0xFF2A9D8F),
   Color(0xFFE9C46A),
@@ -1166,113 +1044,24 @@ class _UserSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maxAmount = userMap.values.fold(0, max);
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          for (int i = 0; i < userMap.entries.length; i++) ...[
-            _UserRow(
-              nickname: userMap.entries.elementAt(i).key,
-              amount: userMap.entries.elementAt(i).value,
-              total: total,
-              maxAmount: maxAmount,
-              color: _kUserColors[i % _kUserColors.length],
-              onTap: () => onTapUser(
-                userMap.entries.elementAt(i).key,
-                _kUserColors[i % _kUserColors.length],
-              ),
-            ),
-            if (i < userMap.length - 1) const SizedBox(height: 16),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _UserRow extends StatelessWidget {
-  final String nickname;
-  final int amount;
-  final int total;
-  final int maxAmount;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _UserRow({
-    required this.nickname,
-    required this.amount,
-    required this.total,
-    required this.maxAmount,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final ratio = maxAmount > 0 ? amount / maxAmount : 0.0;
-    final percent = total > 0 ? (amount / total * 100).toStringAsFixed(1) : '0.0';
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Column(
+    return Column(
       children: [
-        Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(Icons.person_outline, color: color, size: 18),
+        for (int i = 0; i < userMap.entries.length; i++)
+          _StatRow(
+            label: userMap.entries.elementAt(i).key,
+            amount: userMap.entries.elementAt(i).value,
+            percent: total > 0
+                ? (userMap.entries.elementAt(i).value / total * 100)
+                    .round()
+                    .toString()
+                : '0',
+            color: _kUserColors[i % _kUserColors.length],
+            onTap: () => onTapUser(
+              userMap.entries.elementAt(i).key,
+              _kUserColors[i % _kUserColors.length],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(nickname,
-                  style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w500)),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text('${formatCurrency(amount)}원',
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w700)),
-                Text('$percent%',
-                    style: const TextStyle(
-                        fontSize: 11, color: Colors.black38)),
-              ],
-            ),
-            const SizedBox(width: 4),
-            const Icon(Icons.chevron_right, size: 18, color: Colors.black26),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: LinearProgressIndicator(
-            value: ratio,
-            backgroundColor: color.withValues(alpha: 0.1),
-            valueColor: AlwaysStoppedAnimation<Color>(color),
-            minHeight: 6,
           ),
-        ),
       ],
-      ),
     );
   }
 }
@@ -1296,113 +1085,99 @@ class _CategorySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maxAmount = catMap.values.first;
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return Column(
+      children: [
+        for (final entry in catMap.entries)
+          _StatRow(
+            label: entry.key,
+            amount: entry.value,
+            percent: total > 0 ? (entry.value / total * 100).round().toString() : '0',
+            color: colorMap[entry.key] ?? Colors.grey,
+            icon: iconMap[entry.key],
+            onTap: () => onTapCategory(entry.key),
           ),
-        ],
-      ),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          for (int i = 0; i < catMap.entries.length; i++) ...[
-            _CategoryRow(
-              category: catMap.entries.elementAt(i).key,
-              amount: catMap.entries.elementAt(i).value,
-              total: total,
-              maxAmount: maxAmount,
-              color: colorMap[catMap.entries.elementAt(i).key] ?? Colors.grey,
-              icon: iconMap[catMap.entries.elementAt(i).key] ?? Icons.more_horiz,
-              onTap: () => onTapCategory(catMap.entries.elementAt(i).key),
-            ),
-            if (i < catMap.length - 1) const SizedBox(height: 16),
-          ],
-        ],
-      ),
+      ],
     );
   }
 }
 
-class _CategoryRow extends StatelessWidget {
-  final String category;
+/// 카테고리·사용자 리스트 공통 행: 색상 있는 퍼센트 + (아이콘) + 이름 + 금액.
+class _StatRow extends StatelessWidget {
+  final String label;
   final int amount;
-  final int total;
-  final int maxAmount;
+  final String percent;
   final Color color;
-  final IconData icon;
+  final IconData? icon;
   final VoidCallback onTap;
 
-  const _CategoryRow({
-    required this.category,
+  const _StatRow({
+    required this.label,
     required this.amount,
-    required this.total,
-    required this.maxAmount,
+    required this.percent,
     required this.color,
-    required this.icon,
+    this.icon,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final ratio = maxAmount > 0 ? amount / maxAmount : 0.0;
-    final percent =
-        total > 0 ? (amount / total * 100).toStringAsFixed(1) : '0.0';
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.card,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 40,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text('$percent%',
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: color)),
+                  ),
                 ),
-                child: Icon(icon, color: color, size: 18),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(category,
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w500)),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text('${formatCurrency(amount)}원',
-                      style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w700)),
-                  Text('$percent%',
-                      style: const TextStyle(
-                          fontSize: 11, color: Colors.black38)),
+                if (icon != null) ...[
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                    ),
+                    child: Icon(icon, size: 14, color: color),
+                  ),
+                  const SizedBox(width: 8),
                 ],
-              ),
-              const SizedBox(width: 4),
-              const Icon(Icons.chevron_right, size: 18, color: Colors.black26),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: ratio,
-              backgroundColor: color.withValues(alpha: 0.1),
-              valueColor: AlwaysStoppedAnimation<Color>(color),
-              minHeight: 6,
+                Expanded(
+                  child: Text(label,
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w500),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                ),
+                Text('${formatCurrency(amount)}원',
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w700)),
+                const SizedBox(width: 4),
+                const Icon(Icons.chevron_right, size: 18, color: Colors.black26),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

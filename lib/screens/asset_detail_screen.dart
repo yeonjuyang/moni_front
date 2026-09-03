@@ -3,6 +3,7 @@ import '../models/asset.dart';
 import '../models/transaction.dart';
 import '../utils/formatters.dart';
 import '../widgets/month_selector.dart';
+import '../theme/app_colors.dart';
 
 enum _Direction { in_, out }
 
@@ -82,9 +83,9 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
         .fold(0, (s, t) => s + t.amount);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF8F9FA),
+        backgroundColor: AppColors.background,
         elevation: 0,
         centerTitle: true,
         title: Row(
@@ -94,10 +95,10 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
               width: 28,
               height: 28,
               decoration: BoxDecoration(
-                color: const Color(0xFF4361EE).withValues(alpha: 0.12),
+                color: AppColors.primary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(asset.icon, color: const Color(0xFF4361EE), size: 16),
+              child: Icon(asset.icon, color: AppColors.primary, size: 16),
             ),
             const SizedBox(width: 8),
             Text(asset.assetName,
@@ -161,14 +162,14 @@ class _BalanceCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF4361EE), Color(0xFF7209B7)],
+          colors: [AppColors.primary, AppColors.primaryDark],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF4361EE).withValues(alpha: 0.3),
+            color: AppColors.primary.withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -269,7 +270,7 @@ class _AssetTransactionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = transaction;
     final isIn = direction == _Direction.in_;
-    final amountColor = isIn ? const Color(0xFF4361EE) : const Color(0xFFE17055);
+    final amountColor = isIn ? AppColors.income : AppColors.expense;
     final color = categoryColors[t.category] ?? Colors.grey;
     final icon = categoryIcons[t.category] ?? Icons.circle;
 

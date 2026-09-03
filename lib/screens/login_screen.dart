@@ -7,6 +7,7 @@ import '../utils/api_error.dart';
 import 'home_screen.dart';
 import 'ledger_onboarding_screen.dart';
 import 'ledger_list_screen.dart';
+import '../theme/app_colors.dart';
 
 // 카카오/네이버 개발자 앱 키가 발급되면 이 상수를 false로 바꾸거나 제거한다.
 const bool kDevLoginEnabled = kDebugMode;
@@ -100,7 +101,7 @@ class LoginScreen extends StatelessWidget {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF3A0CA3),
+      backgroundColor: AppColors.primaryDark,
       body: LayoutBuilder(
         builder: (context, constraints) {
           return SingleChildScrollView(
@@ -114,7 +115,7 @@ class LoginScreen extends StatelessWidget {
             child: Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF4361EE), Color(0xFF3A0CA3)],
+                  colors: [AppColors.primary, AppColors.primaryDark],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),

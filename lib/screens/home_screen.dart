@@ -6,6 +6,8 @@ import 'tabs/ledger_tab.dart';
 import 'tabs/asset_tab.dart';
 import 'tabs/stats_tab.dart';
 import 'tabs/settings_tab.dart';
+import '../widgets/floating_nav_bar.dart';
+import '../theme/app_colors.dart';
 
 class HomeScreen extends StatefulWidget {
   final int ledgerId;
@@ -93,29 +95,30 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: tabs[_selectedIndex],
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: FloatingNavBar(
         selectedIndex: _selectedIndex,
-        onDestinationSelected: (i) => setState(() => _selectedIndex = i),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.book_outlined),
-            selectedIcon: Icon(Icons.book),
+        onSelect: (i) => setState(() => _selectedIndex = i),
+        items: const [
+          FloatingNavItem(
+            icon: Icons.book_outlined,
+            selectedIcon: Icons.book,
             label: '가계부',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.bar_chart_outlined),
-            selectedIcon: Icon(Icons.bar_chart),
+          FloatingNavItem(
+            icon: Icons.bar_chart_outlined,
+            selectedIcon: Icons.bar_chart,
             label: '통계',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.account_balance_wallet_outlined),
-            selectedIcon: Icon(Icons.account_balance_wallet),
+          FloatingNavItem(
+            icon: Icons.account_balance_wallet_outlined,
+            selectedIcon: Icons.account_balance_wallet,
             label: '자산',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
+          FloatingNavItem(
+            icon: Icons.person_outline,
+            selectedIcon: Icons.person,
             label: '설정',
           ),
         ],

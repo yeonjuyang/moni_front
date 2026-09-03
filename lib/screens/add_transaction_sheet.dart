@@ -10,6 +10,9 @@ import '../utils/api_error.dart';
 import '../utils/formatters.dart';
 import '../widgets/calculator_widget.dart';
 import '../widgets/quick_date_picker.dart';
+import '../widgets/selectable_icon_tile.dart';
+import '../widgets/pill_toggle.dart';
+import '../theme/app_colors.dart';
 
 class AddTransactionSheet extends StatefulWidget {
   final int ledgerId;
@@ -492,20 +495,22 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               ),
 
             // 수입/지출 토글
-            SizedBox(
-              width: double.infinity,
-              child: SegmentedButton<TransactionType>(
-                segments: const [
-                  ButtonSegment(
-                      value: TransactionType.expense, label: Text('지출')),
-                  ButtonSegment(
-                      value: TransactionType.income, label: Text('수입')),
-                  ButtonSegment(
-                      value: TransactionType.transfer, label: Text('이체')),
-                ],
-                selected: {_type},
-                onSelectionChanged: (s) => _onTypeChanged(s.first),
-              ),
+            PillToggle(
+              selectedIndex: switch (_type) {
+                TransactionType.expense => 0,
+                TransactionType.income => 1,
+                TransactionType.transfer => 2,
+              },
+              onSelected: (i) => _onTypeChanged(switch (i) {
+                0 => TransactionType.expense,
+                1 => TransactionType.income,
+                _ => TransactionType.transfer,
+              }),
+              items: const [
+                PillToggleItem(label: '지출', color: AppColors.expense),
+                PillToggleItem(label: '수입', color: AppColors.income),
+                PillToggleItem(label: '이체', color: AppColors.primary),
+              ],
             ),
             const SizedBox(height: 16),
 
@@ -632,15 +637,15 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               else
                 Wrap(
                   spacing: 8,
-                  runSpacing: 4,
+                  runSpacing: 8,
                   children: _categories.map((c) {
                     final isSelected = _selectedCategory == c.categoryName;
-                    return ChoiceChip(
-                      avatar: Icon(c.icon, size: 14,
-                          color: isSelected ? null : c.color),
-                      label: Text(c.categoryName),
+                    return SelectableIconTile(
+                      icon: c.icon,
+                      color: c.color,
+                      label: c.categoryName,
                       selected: isSelected,
-                      onSelected: (_) =>
+                      onTap: () =>
                           setState(() => _selectedCategory = c.categoryName),
                     );
                   }).toList(),
@@ -772,13 +777,14 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
-          runSpacing: 4,
+          runSpacing: 8,
           children: _assets.map((asset) {
-            return ChoiceChip(
-              avatar: Icon(asset.icon, size: 16),
-              label: Text(asset.assetName),
+            return SelectableIconTile(
+              icon: asset.icon,
+              color: AppColors.primary,
+              label: asset.assetName,
               selected: selectedId == asset.assetId,
-              onSelected: (_) => onSelected(asset.assetId),
+              onTap: () => onSelected(asset.assetId),
             );
           }).toList(),
         ),

@@ -4,6 +4,9 @@ import '../../utils/formatters.dart';
 import '../../widgets/month_selector.dart';
 import '../add_transaction_sheet.dart';
 import '../transaction_search_screen.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_shadows.dart';
+import '../../theme/app_radius.dart';
 
 // ── LedgerTab ─────────────────────────────────────────────────────────────────
 
@@ -142,9 +145,9 @@ class _LedgerTabState extends State<LedgerTab> {
     final displayed = _displayedTransactions;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF8F9FA),
+        backgroundColor: AppColors.background,
         elevation: 0,
         leading: const SizedBox.shrink(),
         leadingWidth: 52,
@@ -392,10 +395,10 @@ class _DayCell extends StatelessWidget {
 
     final expenseColor = isSelected
         ? cs.onPrimary.withValues(alpha: 0.9)
-        : const Color(0xFFE17055);
+        : AppColors.expense;
     final incomeColor = isSelected
         ? cs.onPrimary.withValues(alpha: 0.9)
-        : const Color(0xFF4361EE);
+        : AppColors.income;
 
     return InkWell(
       onTap: onTap,
@@ -422,30 +425,35 @@ class _DayCell extends StatelessWidget {
                       : FontWeight.normal,
                   color: dayNumColor,
                 )),
-            if (expense > 0) ...[
-              const SizedBox(height: 2),
-              SizedBox(
-                width: double.infinity,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text('-${formatCurrency(expense)}',
-                      style: TextStyle(fontSize: 9, color: expenseColor),
-                      textAlign: TextAlign.center),
-                ),
+            const SizedBox(height: 2),
+            SizedBox(
+              height: 23,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  if (expense > 0)
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text('-${formatCompactCurrency(expense)}',
+                          style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: expenseColor)),
+                    ),
+                  if (expense > 0 && income > 0) const SizedBox(height: 1),
+                  if (income > 0)
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text('+${formatCompactCurrency(income)}',
+                          style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: incomeColor)),
+                    ),
+                ],
               ),
-            ],
-            if (income > 0) ...[
-              const SizedBox(height: 1),
-              SizedBox(
-                width: double.infinity,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text('+${formatCurrency(income)}',
-                      style: TextStyle(fontSize: 9, color: incomeColor),
-                      textAlign: TextAlign.center),
-                ),
-              ),
-            ],
+            ),
           ],
         ),
       ),
@@ -471,18 +479,12 @@ class _SummaryCard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF4361EE), Color(0xFF7209B7)],
+          colors: [AppColors.primary, AppColors.primaryDark],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF4361EE).withValues(alpha: 0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.hero(AppColors.primary),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -602,40 +604,17 @@ class _DateGroup extends StatelessWidget {
               if (dayIncome > 0)
                 Text('+${formatCurrency(dayIncome)}',
                     style: const TextStyle(
-                        fontSize: 12, color: Color(0xFF4361EE))),
+                        fontSize: 12, color: AppColors.income)),
               if (dayIncome > 0 && dayExpense > 0) const SizedBox(width: 6),
               if (dayExpense > 0)
                 Text('-${formatCurrency(dayExpense)}',
                     style: const TextStyle(
-                        fontSize: 12, color: Color(0xFFE17055))),
+                        fontSize: 12, color: AppColors.expense)),
             ],
           ),
         ),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              for (int i = 0; i < transactions.length; i++) ...[
-                _TransactionTile(
-                    transaction: transactions[i],
-                    onTap: () => onEdit(transactions[i])),
-                if (i < transactions.length - 1)
-                  const Divider(height: 1, indent: 64, endIndent: 16),
-              ],
-            ],
-          ),
-        ),
+        for (final t in transactions)
+          _TransactionTile(transaction: t, onTap: () => onEdit(t)),
         const SizedBox(height: 4),
       ],
     );
@@ -656,11 +635,21 @@ class _TransactionTile extends StatelessWidget {
     final color = categoryColors[transaction.category] ?? Colors.grey;
     final icon = categoryIcons[transaction.category] ?? Icons.circle;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.card,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Row(
           children: [
             Container(
@@ -668,7 +657,7 @@ class _TransactionTile extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Icon(icon, color: color, size: 20),
             ),
@@ -710,11 +699,13 @@ class _TransactionTile extends StatelessWidget {
                 color: isTransfer
                     ? Colors.black54
                     : isExpense
-                        ? const Color(0xFFE17055)
-                        : const Color(0xFF4361EE),
+                        ? AppColors.expense
+                        : AppColors.income,
               ),
             ),
           ],
+        ),
+          ),
         ),
       ),
     );
