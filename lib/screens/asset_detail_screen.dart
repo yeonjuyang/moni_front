@@ -4,6 +4,8 @@ import '../models/transaction.dart';
 import '../utils/formatters.dart';
 import '../widgets/month_selector.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
+import '../theme/app_shadows.dart';
 
 enum _Direction { in_, out }
 
@@ -95,10 +97,10 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
               width: 28,
               height: 28,
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
+                color: AppColors.primaryDark.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
-              child: Icon(asset.icon, color: AppColors.primary, size: 16),
+              child: Icon(asset.icon, color: AppColors.primaryDark, size: 16),
             ),
             const SizedBox(width: 8),
             Text(asset.assetName,
@@ -125,7 +127,7 @@ class _AssetDetailScreenState extends State<AssetDetailScreen> {
                       size: 48, color: Colors.black.withValues(alpha: 0.15)),
                   const SizedBox(height: 10),
                   const Text('이 달의 입출금 내역이 없어요',
-                      style: TextStyle(color: Colors.black38, fontSize: 14)),
+                      style: TextStyle(color: AppColors.textMuted, fontSize: 14)),
                 ],
               ),
             )
@@ -166,14 +168,8 @@ class _BalanceCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.hero(AppColors.primary),
       ),
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
       child: Row(
@@ -288,14 +284,8 @@ class _AssetTransactionCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        boxShadow: AppShadows.card,
       ),
       child: Row(
         children: [
@@ -304,7 +294,7 @@ class _AssetTransactionCard extends StatelessWidget {
             height: 40,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Icon(icon, color: color, size: 20),
           ),
@@ -321,7 +311,7 @@ class _AssetTransactionCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   '${formatDateHeader(t.date)} · $subtitle',
-                  style: const TextStyle(fontSize: 12, color: Colors.black38),
+                  style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),

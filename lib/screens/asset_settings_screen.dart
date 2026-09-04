@@ -4,6 +4,8 @@ import '../services/asset_service.dart';
 import '../utils/api_error.dart';
 import '../utils/formatters.dart';
 import '../widgets/calculator_widget.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
 
 class AssetSettingsScreen extends StatefulWidget {
   final int ledgerId;
@@ -176,7 +178,7 @@ class _AssetSettingsScreenState extends State<AssetSettingsScreen> {
                         vertical: 18, horizontal: 20),
                     decoration: BoxDecoration(
                       color: cs.primaryContainer,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,7 +205,7 @@ class _AssetSettingsScreenState extends State<AssetSettingsScreen> {
                   child: _assets.isEmpty
                       ? const Center(
                           child: Text('자산이 없어요',
-                              style: TextStyle(color: Colors.black38)),
+                              style: TextStyle(color: AppColors.textMuted)),
                         )
                       : ListView(
                           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -217,7 +219,7 @@ class _AssetSettingsScreenState extends State<AssetSettingsScreen> {
                                   style: const TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w700,
-                                      color: Colors.black54),
+                                      color: AppColors.textMuted),
                                 ),
                               ),
                               for (int index = 0;
@@ -421,7 +423,7 @@ class _AssetSheetState extends State<_AssetSheet> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                    color: Colors.black12,
+                    color: AppColors.divider,
                     borderRadius: BorderRadius.circular(2)),
               ),
             ),
@@ -443,7 +445,7 @@ class _AssetSheetState extends State<_AssetSheet> {
             const SizedBox(height: 16),
             // 종류
             const Text('종류',
-                style: TextStyle(fontSize: 13, color: Colors.black54)),
+                style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -461,18 +463,18 @@ class _AssetSheetState extends State<_AssetSheet> {
             // 잔액 (계산기)
             InkWell(
               onTap: () => setState(() => _showCalculator = true),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               child: Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 12, vertical: 14),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.black26),
-                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.divider),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Row(
                   children: [
                     const Icon(Icons.calculate_outlined,
-                        size: 18, color: Colors.black54),
+                        size: 18, color: AppColors.textMuted),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -481,7 +483,7 @@ class _AssetSheetState extends State<_AssetSheet> {
                             : '잔액',
                         style: TextStyle(
                           fontSize: 15,
-                          color: _balanceSet ? null : Colors.black38,
+                          color: _balanceSet ? null : AppColors.textMuted,
                         ),
                       ),
                     ),

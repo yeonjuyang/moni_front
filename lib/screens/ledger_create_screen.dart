@@ -59,7 +59,7 @@ class _LedgerCreateScreenState extends State<LedgerCreateScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primary,
+      backgroundColor: AppColors.primaryDark,
       body: SafeArea(
         child: Column(
           children: [

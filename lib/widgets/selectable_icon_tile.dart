@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
 
 /// 아이콘이 위, 이름이 아래에 오는 선택 가능한 타일.
 /// 거래추가 시트의 카테고리 · 자산 선택 등에 사용.
@@ -22,15 +24,15 @@ class SelectableIconTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       child: Container(
         width: 66,
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
         decoration: BoxDecoration(
-          color: selected ? color.withValues(alpha: 0.12) : Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          color: selected ? color.withValues(alpha: 0.12) : AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
-            color: selected ? color : Colors.black.withValues(alpha: 0.08),
+            color: selected ? color : AppColors.divider,
             width: selected ? 1.5 : 1,
           ),
         ),
@@ -52,7 +54,7 @@ class SelectableIconTile extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected ? color : Colors.black87,
+                color: selected ? color : AppColors.textPrimary,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

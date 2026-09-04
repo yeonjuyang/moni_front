@@ -4,6 +4,8 @@ import '../services/ledger_service.dart';
 import 'home_screen.dart';
 import 'ledger_create_screen.dart';
 import 'ledger_onboarding_screen.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
 
 class LedgerListScreen extends StatelessWidget {
   final List<LedgerModel> ledgers;
@@ -47,7 +49,7 @@ class LedgerListScreen extends StatelessWidget {
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(double.infinity, 52),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(AppRadius.md)),
             ),
           ),
           const SizedBox(height: 8),
@@ -61,7 +63,7 @@ class LedgerListScreen extends StatelessWidget {
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(double.infinity, 52),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(AppRadius.md)),
             ),
           ),
         ],
@@ -96,7 +98,7 @@ class _LedgerCard extends StatelessWidget {
                 height: 44,
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Icon(
                   isShared ? Icons.people_outlined : Icons.person_outlined,
@@ -114,11 +116,11 @@ class _LedgerCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(isShared ? '공유 가계부' : '개인 가계부',
                         style: const TextStyle(
-                            fontSize: 12, color: Colors.black45)),
+                            fontSize: 12, color: AppColors.textMuted)),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Colors.black26),
+              const Icon(Icons.chevron_right, color: AppColors.divider),
             ],
           ),
         ),

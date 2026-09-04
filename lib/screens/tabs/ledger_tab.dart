@@ -201,7 +201,7 @@ class _LedgerTabState extends State<LedgerTab> {
                                   ? '이 날의 내역이 없어요'
                                   : '날짜를 선택해주세요',
                               style: const TextStyle(
-                                  color: Colors.black38, fontSize: 15),
+                                  color: AppColors.textMuted, fontSize: 15),
                             ),
                           ],
                         ),
@@ -281,14 +281,8 @@ class _CalendarSection extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.card,
       ),
       child: Column(
         children: [
@@ -306,7 +300,7 @@ class _CalendarSection extends StatelessWidget {
                               ? Colors.red.shade400
                               : h == '토'
                                   ? Colors.blue.shade400
-                                  : Colors.black54,
+                                  : AppColors.textMuted,
                         )),
                   ),
                 );
@@ -390,7 +384,7 @@ class _DayCell extends StatelessWidget {
     } else if (isSaturday) {
       dayNumColor = Colors.blue.shade400;
     } else {
-      dayNumColor = Colors.black87;
+      dayNumColor = AppColors.textPrimary;
     }
 
     final expenseColor = isSelected
@@ -402,16 +396,16 @@ class _DayCell extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Container(
         margin: const EdgeInsets.all(2),
         decoration: isSelected
             ? BoxDecoration(
-                color: cs.primary, borderRadius: BorderRadius.circular(8))
+                color: cs.primary, borderRadius: BorderRadius.circular(AppRadius.sm))
             : isToday
                 ? BoxDecoration(
                     border: Border.all(color: cs.primary, width: 1.5),
-                    borderRadius: BorderRadius.circular(8))
+                    borderRadius: BorderRadius.circular(AppRadius.sm))
                 : null,
         padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 1),
         child: Column(
@@ -598,7 +592,7 @@ class _DateGroup extends StatelessWidget {
                   style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black45,
+                      color: AppColors.textMuted,
                       letterSpacing: 0.3)),
               const Spacer(),
               if (dayIncome > 0)
@@ -634,6 +628,22 @@ class _TransactionTile extends StatelessWidget {
     final isTransfer = transaction.type == TransactionType.transfer;
     final color = categoryColors[transaction.category] ?? Colors.grey;
     final icon = categoryIcons[transaction.category] ?? Icons.circle;
+    final hasNote = transaction.note != null && transaction.note!.isNotEmpty;
+
+    final amountText = Text(
+      isTransfer
+          ? '${formatCurrency(transaction.amount)}원'
+          : '${isExpense ? '-' : '+'}${formatCurrency(transaction.amount)}원',
+      style: TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w700,
+        color: isTransfer
+            ? AppColors.textMuted
+            : isExpense
+                ? AppColors.expense
+                : AppColors.income,
+      ),
+    );
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
@@ -651,6 +661,7 @@ class _TransactionTile extends StatelessWidget {
           child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               width: 40,
@@ -670,37 +681,27 @@ class _TransactionTile extends StatelessWidget {
                       style: const TextStyle(
                           fontSize: 15, fontWeight: FontWeight.w500)),
                   const SizedBox(height: 2),
-                  Text(
-                    transaction.paidByUserNickname != null
-                        ? '${transaction.category} · ${transaction.paidByUserNickname}'
-                        : transaction.category,
-                    style: const TextStyle(
-                        fontSize: 12, color: Colors.black38),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          [
+                            transaction.category,
+                            if (transaction.paidByUserNickname != null)
+                              transaction.paidByUserNickname!,
+                            if (hasNote) transaction.note!,
+                          ].join(' · '),
+                          style: const TextStyle(
+                              fontSize: 12, color: AppColors.textMuted),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      amountText,
+                    ],
                   ),
-                  if (transaction.note != null &&
-                      transaction.note!.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(transaction.note!,
-                        style: const TextStyle(
-                            fontSize: 12, color: Colors.black45),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
-                  ],
                 ],
-              ),
-            ),
-            Text(
-              isTransfer
-                  ? '${formatCurrency(transaction.amount)}원'
-                  : '${isExpense ? '-' : '+'}${formatCurrency(transaction.amount)}원',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: isTransfer
-                    ? Colors.black54
-                    : isExpense
-                        ? AppColors.expense
-                        : AppColors.income,
               ),
             ),
           ],

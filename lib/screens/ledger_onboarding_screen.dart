@@ -60,7 +60,7 @@ class _LedgerOnboardingScreenState extends State<LedgerOnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primary,
+      backgroundColor: AppColors.primaryDark,
       body: SafeArea(
         child: Column(
           children: [
@@ -111,8 +111,8 @@ class _LedgerOnboardingScreenState extends State<LedgerOnboardingScreen> {
                       icon: const Icon(Icons.group_add_outlined),
                       label: const Text('초대 코드로 참여', style: TextStyle(fontSize: 16)),
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: AppColors.primary),
-                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: AppColors.primaryDark),
+                        foregroundColor: AppColors.primaryDark,
                       ),
                     ),
                   ),
@@ -149,7 +149,7 @@ class _LedgerOnboardingScreenState extends State<LedgerOnboardingScreen> {
                       child: FilledButton(
                         onPressed: _isJoining ? null : _join,
                         style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.primary),
+                            backgroundColor: AppColors.primaryDark),
                         child: _isJoining
                             ? const SizedBox(
                                 width: 20,

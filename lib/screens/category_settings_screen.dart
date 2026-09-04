@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/category.dart';
 import '../services/category_service.dart';
 import '../utils/api_error.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
 
 class CategorySettingsScreen extends StatefulWidget {
   final int ledgerId;
@@ -165,7 +167,7 @@ class _CategoryList extends StatelessWidget {
   Widget build(BuildContext context) {
     if (categories.isEmpty) {
       return const Center(
-        child: Text('카테고리가 없어요', style: TextStyle(color: Colors.black38)),
+        child: Text('카테고리가 없어요', style: TextStyle(color: AppColors.textMuted)),
       );
     }
     return ListView.separated(
@@ -274,7 +276,7 @@ class _CategorySheetState extends State<_CategorySheet> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                    color: Colors.black12,
+                    color: AppColors.divider,
                     borderRadius: BorderRadius.circular(2)),
               ),
             ),
@@ -294,12 +296,12 @@ class _CategorySheetState extends State<_CategorySheet> {
             ),
             const SizedBox(height: 20),
             const Text('아이콘',
-                style: TextStyle(fontSize: 13, color: Colors.black54)),
+                style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
             const SizedBox(height: 8),
             _buildIconGrid(),
             const SizedBox(height: 20),
             const Text('색상',
-                style: TextStyle(fontSize: 13, color: Colors.black54)),
+                style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
             const SizedBox(height: 8),
             _buildColorGrid(),
             const SizedBox(height: 20),
@@ -340,7 +342,7 @@ class _CategorySheetState extends State<_CategorySheet> {
               color: isSelected
                   ? selectedColor.withValues(alpha: 0.15)
                   : const Color(0xFFF5F5F5),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               border: isSelected
                   ? Border.all(color: selectedColor, width: 2)
                   : null,
@@ -348,7 +350,7 @@ class _CategorySheetState extends State<_CategorySheet> {
             child: Icon(
               entry.value,
               size: 22,
-              color: isSelected ? selectedColor : Colors.black45,
+              color: isSelected ? selectedColor : AppColors.textMuted,
             ),
           ),
         );
@@ -372,7 +374,7 @@ class _CategorySheetState extends State<_CategorySheet> {
               color: color,
               shape: BoxShape.circle,
               border: Border.all(
-                color: isSelected ? Colors.black54 : Colors.transparent,
+                color: isSelected ? AppColors.textMuted : Colors.transparent,
                 width: 2.5,
               ),
             ),

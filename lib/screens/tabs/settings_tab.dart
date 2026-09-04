@@ -240,11 +240,11 @@ class _SettingsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = item.destructive ? Colors.red : Colors.black87;
+    final color = item.destructive ? Colors.red : AppColors.textPrimary;
     final iconBg = item.destructive
         ? Colors.red.withValues(alpha: 0.08)
         : AppColors.primary.withValues(alpha: 0.1);
-    final iconColor = item.destructive ? Colors.red : AppColors.primary;
+    final iconColor = item.destructive ? Colors.red : AppColors.primaryDark;
 
     Widget content = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -272,12 +272,12 @@ class _SettingsRow extends StatelessWidget {
                 if (item.subtitle != null)
                   Text(item.subtitle!,
                       style: const TextStyle(
-                          fontSize: 12, color: Colors.black38)),
+                          fontSize: 12, color: AppColors.textMuted)),
               ],
             ),
           ),
           if (item.tappable)
-            const Icon(Icons.chevron_right, size: 18, color: Colors.black26),
+            const Icon(Icons.chevron_right, size: 18, color: AppColors.divider),
         ],
       ),
     );

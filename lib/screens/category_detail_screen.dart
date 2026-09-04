@@ -5,6 +5,8 @@ import '../models/transaction.dart';
 import '../utils/formatters.dart';
 import '../widgets/month_selector.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
+import '../theme/app_shadows.dart';
 
 class CategoryDetailScreen extends StatefulWidget {
   final String category;
@@ -147,7 +149,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               height: 28,
               decoration: BoxDecoration(
                 color: widget.categoryColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: Icon(widget.categoryIcon,
                   color: widget.categoryColor, size: 16),
@@ -190,7 +192,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                   const SizedBox(height: 10),
                   const Text('해당 기간의 내역이 없어요',
                       style:
-                          TextStyle(color: Colors.black38, fontSize: 14)),
+                          TextStyle(color: AppColors.textMuted, fontSize: 14)),
                 ],
               ),
             )
@@ -227,14 +229,8 @@ class _LineChartCard extends StatelessWidget {
       height: 160,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.card,
       ),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: CustomPaint(
@@ -392,21 +388,15 @@ class _SummaryCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
               style:
-                  const TextStyle(fontSize: 12, color: Colors.black45)),
+                  const TextStyle(fontSize: 12, color: AppColors.textMuted)),
           const SizedBox(height: 4),
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -423,7 +413,7 @@ class _SummaryCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text('총 $count건',
                   style: const TextStyle(
-                      fontSize: 13, color: Colors.black38)),
+                      fontSize: 13, color: AppColors.textMuted)),
             ],
           ),
         ],
@@ -448,14 +438,8 @@ class _TransactionCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        boxShadow: AppShadows.card,
       ),
       child: Row(
         children: [
@@ -472,7 +456,7 @@ class _TransactionCard extends StatelessWidget {
                 Text(
                   '${t.date.month}월',
                   style: const TextStyle(
-                      fontSize: 10, color: Colors.black38),
+                      fontSize: 10, color: AppColors.textMuted),
                 ),
               ],
             ),
@@ -491,7 +475,7 @@ class _TransactionCard extends StatelessWidget {
                 if (t.paidByUserNickname != null)
                   Text(t.paidByUserNickname!,
                       style: const TextStyle(
-                          fontSize: 12, color: Colors.black38)),
+                          fontSize: 12, color: AppColors.textMuted)),
               ],
             ),
           ),

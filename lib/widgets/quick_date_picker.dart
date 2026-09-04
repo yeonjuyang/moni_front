@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
 
 Future<DateTime?> showQuickDatePicker(
   BuildContext context, {
@@ -67,7 +69,7 @@ class _QuickDatePickerState extends State<_QuickDatePicker> {
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
       ),
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
       child: Column(
@@ -118,7 +120,7 @@ class _QuickDatePickerState extends State<_QuickDatePicker> {
                           ? Colors.red.shade300
                           : isSat
                               ? Colors.blue.shade300
-                              : Colors.black45,
+                              : AppColors.textMuted,
                     ),
                   ),
                 ),
@@ -152,7 +154,7 @@ class _QuickDatePickerState extends State<_QuickDatePicker> {
 
               Color textColor;
               if (outOfRange) {
-                textColor = Colors.black12;
+                textColor = AppColors.divider;
               } else if (isSelected) {
                 textColor = Colors.white;
               } else if (isSun) {
@@ -160,7 +162,7 @@ class _QuickDatePickerState extends State<_QuickDatePicker> {
               } else if (isSat) {
                 textColor = Colors.blue.shade400;
               } else {
-                textColor = Colors.black87;
+                textColor = AppColors.textPrimary;
               }
 
               return GestureDetector(

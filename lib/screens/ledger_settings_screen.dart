@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import '../models/ledger.dart';
 import '../services/ledger_service.dart';
 import '../utils/api_error.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
 import 'ledger_onboarding_screen.dart';
 import 'ledger_list_screen.dart';
 
@@ -197,14 +199,14 @@ class _LedgerSettingsScreenState extends State<LedgerSettingsScreen> {
             ),
             const SizedBox(height: 24),
             const Text('초대 코드',
-                style: TextStyle(fontSize: 13, color: Colors.black54, fontWeight: FontWeight.w600)),
+                style: TextStyle(fontSize: 13, color: AppColors.textMuted, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             if (code != null)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Row(
                   children: [
@@ -230,7 +232,7 @@ class _LedgerSettingsScreenState extends State<LedgerSettingsScreen> {
             else
               Text(
                 '아직 초대 코드가 없어요',
-                style: TextStyle(color: Colors.black38, fontSize: 14),
+                style: TextStyle(color: AppColors.textMuted, fontSize: 14),
               ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
@@ -246,7 +248,7 @@ class _LedgerSettingsScreenState extends State<LedgerSettingsScreen> {
               const SizedBox(height: 6),
               Text(
                 '코드를 재생성하면 기존 코드는 사용할 수 없어요.',
-                style: TextStyle(fontSize: 12, color: Colors.black38),
+                style: TextStyle(fontSize: 12, color: AppColors.textMuted),
               ),
             ],
             const SizedBox(height: 32),
@@ -261,7 +263,7 @@ class _LedgerSettingsScreenState extends State<LedgerSettingsScreen> {
                   side: const BorderSide(color: Colors.red),
                   minimumSize: const Size(double.infinity, 48),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(AppRadius.md)),
                 ),
                 child: _isDeleting
                     ? const SizedBox(

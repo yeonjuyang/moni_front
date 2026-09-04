@@ -8,6 +8,7 @@ import 'home_screen.dart';
 import 'ledger_onboarding_screen.dart';
 import 'ledger_list_screen.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
 
 // 카카오/네이버 개발자 앱 키가 발급되면 이 상수를 false로 바꾸거나 제거한다.
 const bool kDevLoginEnabled = kDebugMode;
@@ -179,7 +180,7 @@ class LoginScreen extends StatelessWidget {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 24),
                   decoration: BoxDecoration(
-                    color: Colors.black12,
+                    color: AppColors.divider,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -188,7 +189,7 @@ class LoginScreen extends StatelessWidget {
                   '소셜 계정으로 간편하게 시작하기',
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.black45,
+                    color: AppColors.textMuted,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -244,7 +245,7 @@ class LoginScreen extends StatelessWidget {
                   const SizedBox(height: 8),
                   const Text(
                     '개발 테스트 로그인 (카카오/네이버 키 발급 전 임시)',
-                    style: TextStyle(fontSize: 11, color: Colors.black38),
+                    style: TextStyle(fontSize: 11, color: AppColors.textMuted),
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -312,7 +313,7 @@ class _SocialButton extends StatelessWidget {
           foregroundColor: textColor,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
           ),
         ),
         child: Stack(

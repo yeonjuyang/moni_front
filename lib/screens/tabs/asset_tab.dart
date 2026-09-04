@@ -112,7 +112,7 @@ class _AssetTabState extends State<AssetTab> {
                               const SizedBox(height: 12),
                               const Text('자산이 없어요',
                                   style: TextStyle(
-                                      color: Colors.black38, fontSize: 15)),
+                                      color: AppColors.textMuted, fontSize: 15)),
                             ],
                           ),
                         ),
@@ -212,7 +212,7 @@ class _AssetRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const color = AppColors.primary;
+    const color = AppColors.primaryDark;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
@@ -251,7 +251,7 @@ class _AssetRow extends StatelessWidget {
                   style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(width: 4),
-                const Icon(Icons.chevron_right, size: 18, color: Colors.black26),
+                const Icon(Icons.chevron_right, size: 18, color: AppColors.divider),
               ],
             ),
           ),

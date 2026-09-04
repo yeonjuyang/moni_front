@@ -386,7 +386,7 @@ class _StatsTabState extends State<StatsTab> {
                   ),
                   const SizedBox(width: 4),
                   const Icon(Icons.edit_calendar_outlined,
-                      size: 14, color: Colors.black45),
+                      size: 14, color: AppColors.textMuted),
                 ],
               ),
             ),
@@ -472,7 +472,7 @@ class _StatsTabState extends State<StatsTab> {
                               ? '지출 카테고리가 없어요. 설정에서 먼저 추가해주세요.'
                               : '수입 카테고리가 없어요. 설정에서 먼저 추가해주세요.',
                           style: const TextStyle(
-                              color: Colors.black38, fontSize: 15),
+                              color: AppColors.textMuted, fontSize: 15),
                         ),
                       ],
                     ),
@@ -546,7 +546,7 @@ class _FilterSheetState extends State<_FilterSheet> {
   Widget _subLabel(String text) => Padding(
         padding: const EdgeInsets.only(bottom: 6),
         child: Text(text,
-            style: const TextStyle(fontSize: 12, color: Colors.black45)),
+            style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
       );
 
   Widget _categoryChips(List<String> cats) => Wrap(
@@ -559,17 +559,17 @@ class _FilterSheetState extends State<_FilterSheet> {
             avatar: Icon(
               categoryIcons[c] ?? Icons.circle,
               size: 14,
-              color: excluded ? Colors.black38 : color,
+              color: excluded ? AppColors.textMuted : color,
             ),
             label: Text(c,
                 style: TextStyle(
-                  color: excluded ? Colors.black38 : null,
+                  color: excluded ? AppColors.textMuted : null,
                   decoration:
                       excluded ? TextDecoration.lineThrough : null,
                 )),
             selected: excluded,
             selectedColor: Colors.black.withValues(alpha: 0.07),
-            checkmarkColor: Colors.black45,
+            checkmarkColor: AppColors.textMuted,
             onSelected: (v) => setState(() {
               if (v) {
                 _excludedCategories.add(c);
@@ -601,7 +601,7 @@ class _FilterSheetState extends State<_FilterSheet> {
             height: 4,
             margin: const EdgeInsets.symmetric(vertical: 12),
             decoration: BoxDecoration(
-                color: Colors.black12,
+                color: AppColors.divider,
                 borderRadius: BorderRadius.circular(2)),
           ),
           // 헤더
@@ -686,7 +686,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                           padding: EdgeInsets.symmetric(horizontal: 10),
                           child: Text('~',
                               style: TextStyle(
-                                  fontSize: 16, color: Colors.black38)),
+                                  fontSize: 16, color: AppColors.textMuted)),
                         ),
                         Expanded(
                           child: _DateField(
@@ -826,7 +826,7 @@ class _PeriodOption extends StatelessWidget {
           color: selected
               ? primary.withValues(alpha: 0.08)
               : Colors.transparent,
-          border: Border.all(color: selected ? primary : Colors.black12),
+          border: Border.all(color: selected ? primary : AppColors.divider),
           borderRadius: BorderRadius.circular(10),
         ),
         alignment: Alignment.center,
@@ -836,7 +836,7 @@ class _PeriodOption extends StatelessWidget {
             fontSize: 14,
             fontWeight:
                 selected ? FontWeight.w600 : FontWeight.normal,
-            color: selected ? primary : Colors.black54,
+            color: selected ? primary : AppColors.textMuted,
           ),
         ),
       ),
@@ -867,7 +867,7 @@ class _DateField extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          border: Border.all(color: hasDate ? primary : Colors.black12),
+          border: Border.all(color: hasDate ? primary : AppColors.divider),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Column(
@@ -877,7 +877,7 @@ class _DateField extends StatelessWidget {
               label,
               style: TextStyle(
                   fontSize: 10,
-                  color: hasDate ? primary : Colors.black38),
+                  color: hasDate ? primary : AppColors.textMuted),
             ),
             const SizedBox(height: 3),
             Text(
@@ -887,7 +887,7 @@ class _DateField extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: hasDate ? FontWeight.w600 : FontWeight.normal,
-                color: hasDate ? primary : Colors.black38,
+                color: hasDate ? primary : AppColors.textMuted,
               ),
             ),
           ],
@@ -915,14 +915,8 @@ class _DonutChart extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        boxShadow: AppShadows.card,
       ),
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -938,7 +932,7 @@ class _DonutChart extends StatelessWidget {
                   children: [
                     const Text('합계',
                         style: TextStyle(
-                            fontSize: 12, color: Colors.black38)),
+                            fontSize: 12, color: AppColors.textMuted)),
                     const SizedBox(height: 4),
                     Text(
                       '${formatCurrency(total)}원',
@@ -972,7 +966,7 @@ class _DonutChart extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text('${e.key} $pct%',
                       style: const TextStyle(
-                          fontSize: 12, color: Colors.black54)),
+                          fontSize: 12, color: AppColors.textMuted)),
                 ],
               );
             }).toList(),
@@ -1024,11 +1018,11 @@ class _DonutPainter extends CustomPainter {
 // ── User stats ────────────────────────────────────────────────────────────────
 
 const _kUserColors = [
-  AppColors.primary,
-  Color(0xFFE63946),
-  Color(0xFF2A9D8F),
-  Color(0xFFE9C46A),
-  Color(0xFFF4A261),
+  AppColors.primaryDark,
+  Color(0xFF7B2CBF),
+  Color(0xFF8A6508),
+  Color(0xFFB5540E),
+  Color(0xFFB0248F),
 ];
 
 class _UserSection extends StatelessWidget {
@@ -1056,6 +1050,7 @@ class _UserSection extends StatelessWidget {
                     .toString()
                 : '0',
             color: _kUserColors[i % _kUserColors.length],
+            icon: Icons.person_outline,
             onTap: () => onTapUser(
               userMap.entries.elementAt(i).key,
               _kUserColors[i % _kUserColors.length],
@@ -1150,18 +1145,27 @@ class _StatRow extends StatelessWidget {
                             color: color)),
                   ),
                 ),
-                if (icon != null) ...[
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                    ),
-                    child: Icon(icon, size: 14, color: color),
-                  ),
-                  const SizedBox(width: 8),
-                ],
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: icon != null
+                      ? Container(
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                          ),
+                          child: Icon(icon, size: 14, color: color),
+                        )
+                      : Center(
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                                color: color, shape: BoxShape.circle),
+                          ),
+                        ),
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(label,
                       style: const TextStyle(
@@ -1173,7 +1177,7 @@ class _StatRow extends StatelessWidget {
                     style: const TextStyle(
                         fontSize: 14, fontWeight: FontWeight.w700)),
                 const SizedBox(width: 4),
-                const Icon(Icons.chevron_right, size: 18, color: Colors.black26),
+                const Icon(Icons.chevron_right, size: 18, color: AppColors.divider),
               ],
             ),
           ),

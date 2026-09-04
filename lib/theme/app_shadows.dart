@@ -5,9 +5,14 @@ class AppShadows {
 
   static const card = [
     BoxShadow(
-      color: Color(0x0A000000),
-      blurRadius: 10,
-      offset: Offset(0, 4),
+      color: Color(0x14102217),
+      blurRadius: 16,
+      offset: Offset(0, 6),
+    ),
+    BoxShadow(
+      color: Color(0x0A102217),
+      blurRadius: 3,
+      offset: Offset(0, 1),
     ),
   ];
 

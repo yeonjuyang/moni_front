@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
 import '../theme/app_shadows.dart';
 
@@ -89,14 +90,14 @@ class _PillToggleSegment extends StatelessWidget {
                   style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: selected ? item.color : Colors.black45)),
+                      color: selected ? item.color : AppColors.textMuted)),
               if (item.amountText != null) ...[
                 const SizedBox(width: 6),
                 Text(item.amountText!,
                     style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
-                        color: selected ? item.color : Colors.black38)),
+                        color: selected ? item.color : AppColors.textMuted)),
               ],
             ],
           ),

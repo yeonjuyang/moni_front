@@ -13,6 +13,7 @@ import '../widgets/quick_date_picker.dart';
 import '../widgets/selectable_icon_tile.dart';
 import '../widgets/pill_toggle.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
 
 class AddTransactionSheet extends StatefulWidget {
   final int ledgerId;
@@ -475,7 +476,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                    color: Colors.black12,
+                    color: AppColors.divider,
                     borderRadius: BorderRadius.circular(2)),
               ),
             ),
@@ -509,7 +510,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               items: const [
                 PillToggleItem(label: '지출', color: AppColors.expense),
                 PillToggleItem(label: '수입', color: AppColors.income),
-                PillToggleItem(label: '이체', color: AppColors.primary),
+                PillToggleItem(label: '이체', color: AppColors.primaryDark),
               ],
             ),
             const SizedBox(height: 16),
@@ -517,18 +518,18 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             // 날짜
             InkWell(
               onTap: _pickDate,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.black26),
-                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.divider),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Row(
                   children: [
                     const Icon(Icons.calendar_today_outlined,
-                        size: 18, color: Colors.black54),
+                        size: 18, color: AppColors.textMuted),
                     const SizedBox(width: 8),
                     Text(formatDateHeader(_selectedDate),
                         style: const TextStyle(fontSize: 15)),
@@ -541,25 +542,25 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             // 금액
             InkWell(
               onTap: () => setState(() => _showCalculator = true),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.black26),
-                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.divider),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Row(
                   children: [
                     const Icon(Icons.calculate_outlined,
-                        size: 18, color: Colors.black54),
+                        size: 18, color: AppColors.textMuted),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         _amount > 0 ? '${formatCurrency(_amount)}원' : '금액',
                         style: TextStyle(
                             fontSize: 15,
-                            color: _amount > 0 ? null : Colors.black38),
+                            color: _amount > 0 ? null : AppColors.textMuted),
                       ),
                     ),
                   ],
@@ -610,14 +611,10 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             _buildAssetSection(),
             const SizedBox(height: 16),
 
-            // 사람
-            _buildPersonSection(),
-            const SizedBox(height: 16),
-
             // 카테고리 (이체는 카테고리 없음)
             if (_type != TransactionType.transfer) ...[
               const Text('카테고리',
-                  style: TextStyle(fontSize: 13, color: Colors.black54)),
+                  style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
               const SizedBox(height: 8),
               if (_isLoadingCategories)
                 const SizedBox(
@@ -628,12 +625,12 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2)),
                     SizedBox(width: 8),
-                    Text('카테고리 불러오는 중...', style: TextStyle(color: Colors.black38)),
+                    Text('카테고리 불러오는 중...', style: TextStyle(color: AppColors.textMuted)),
                   ]),
                 )
               else if (_categories.isEmpty)
                 const Text('카테고리가 없어요. 설정에서 먼저 추가해주세요.',
-                    style: TextStyle(fontSize: 13, color: Colors.black38))
+                    style: TextStyle(fontSize: 13, color: AppColors.textMuted))
               else
                 Wrap(
                   spacing: 8,
@@ -650,8 +647,12 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                     );
                   }).toList(),
                 ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
             ],
+
+            // 사람
+            _buildPersonSection(),
+            const SizedBox(height: 20),
 
             // 저장 / 계속
             if (_isEditing)
@@ -720,7 +721,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               height: 16,
               child: CircularProgressIndicator(strokeWidth: 2)),
           SizedBox(width: 8),
-          Text('자산 불러오는 중...', style: TextStyle(color: Colors.black38)),
+          Text('자산 불러오는 중...', style: TextStyle(color: AppColors.textMuted)),
         ]),
       );
     }
@@ -729,10 +730,10 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       final label = _type == TransactionType.income ? '입금 자산' : '출금 자산';
       return Row(
         children: [
-          const Icon(Icons.info_outline, size: 16, color: Colors.black38),
+          const Icon(Icons.info_outline, size: 16, color: AppColors.textMuted),
           const SizedBox(width: 6),
           Text('$label: 자산을 먼저 등록해주세요',
-              style: const TextStyle(fontSize: 13, color: Colors.black38)),
+              style: const TextStyle(fontSize: 13, color: AppColors.textMuted)),
         ],
       );
     }
@@ -773,7 +774,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
-            style: const TextStyle(fontSize: 13, color: Colors.black54)),
+            style: const TextStyle(fontSize: 13, color: AppColors.textMuted)),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -781,7 +782,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
           children: _assets.map((asset) {
             return SelectableIconTile(
               icon: asset.icon,
-              color: AppColors.primary,
+              color: AppColors.primaryDark,
               label: asset.assetName,
               selected: selectedId == asset.assetId,
               onTap: () => onSelected(asset.assetId),
@@ -802,7 +803,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               height: 16,
               child: CircularProgressIndicator(strokeWidth: 2)),
           SizedBox(width: 8),
-          Text('사용자 불러오는 중...', style: TextStyle(color: Colors.black38)),
+          Text('사용자 불러오는 중...', style: TextStyle(color: AppColors.textMuted)),
         ]),
       );
     }
@@ -813,7 +814,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text('사람',
-            style: TextStyle(fontSize: 13, color: Colors.black54)),
+            style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,

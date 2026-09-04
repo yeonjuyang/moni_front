@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/formatters.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
 
 class CalculatorWidget extends StatefulWidget {
   final int initialValue;
@@ -192,7 +194,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
                     fontSize: 34,
                     fontWeight: FontWeight.w600,
                     letterSpacing: -0.5,
-                    color: Colors.black87,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -274,7 +276,7 @@ class _CalculatorWidgetState extends State<CalculatorWidget> {
     if ('+-×÷='.contains(l)) return cs.primary;
     if (l == '확인') return Colors.white;
     if (l == '지움') return Colors.red.shade400;
-    return Colors.black87;
+    return AppColors.textPrimary;
   }
 
   double _fontSize(String l) {
@@ -307,11 +309,11 @@ class _CalcButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: bg,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       child: InkWell(
         onTap: onTap,
         onLongPress: onLongPress,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Center(
           child: Text(
             label,

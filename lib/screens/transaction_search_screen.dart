@@ -7,6 +7,8 @@ import '../widgets/calculator_widget.dart';
 import '../widgets/quick_date_picker.dart';
 import 'add_transaction_sheet.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
+import '../theme/app_shadows.dart';
 
 // ── 필터 모델 ─────────────────────────────────────────────────────────────────
 
@@ -223,7 +225,7 @@ class _TransactionSearchScreenState extends State<TransactionSearchScreen> {
           decoration: const InputDecoration(
             hintText: '내용, 카테고리, 비고 검색',
             border: InputBorder.none,
-            hintStyle: TextStyle(color: Colors.black38, fontSize: 16),
+            hintStyle: TextStyle(color: AppColors.textMuted, fontSize: 16),
           ),
           style: const TextStyle(fontSize: 16),
           onChanged: (v) => setState(() => _query = v),
@@ -260,7 +262,7 @@ class _TransactionSearchScreenState extends State<TransactionSearchScreen> {
                   return ListTile(
                     dense: true,
                     leading: const Icon(Icons.history,
-                        size: 18, color: Colors.black38),
+                        size: 18, color: AppColors.textMuted),
                     title: Text(s, style: const TextStyle(fontSize: 14)),
                     onTap: () => _applyMemoSuggestion(s),
                   );
@@ -280,11 +282,11 @@ class _TransactionSearchScreenState extends State<TransactionSearchScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.search, size: 48, color: Colors.black12),
+                        Icon(Icons.search, size: 48, color: AppColors.divider),
                         SizedBox(height: 12),
                         Text('검색어나 필터를 설정해보세요',
                             style: TextStyle(
-                                color: Colors.black38, fontSize: 14)),
+                                color: AppColors.textMuted, fontSize: 14)),
                       ],
                     ),
                   )
@@ -294,11 +296,11 @@ class _TransactionSearchScreenState extends State<TransactionSearchScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.receipt_long_outlined,
-                                size: 48, color: Colors.black12),
+                                size: 48, color: AppColors.divider),
                             SizedBox(height: 12),
                             Text('검색 결과가 없어요',
                                 style: TextStyle(
-                                    color: Colors.black38, fontSize: 14)),
+                                    color: AppColors.textMuted, fontSize: 14)),
                           ],
                         ),
                       )
@@ -379,7 +381,7 @@ class _FilterSummaryBar extends StatelessWidget {
                               horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: cs.primaryContainer,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(AppRadius.xl),
                           ),
                           child: Text(c,
                               style: TextStyle(
@@ -419,68 +421,85 @@ class _SearchTile extends StatelessWidget {
     final color = categoryColors[t.category] ?? Colors.grey;
     final icon = categoryIcons[t.category] ?? Icons.circle;
     final amountColor = isTransfer
-        ? Colors.black54
+        ? AppColors.textMuted
         : isExpense
             ? AppColors.expense
             : AppColors.income;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(t.title.isNotEmpty ? t.title : '(메모 없음)',
-                      style: const TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w500),
-                      overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${formatDateHeader(t.date)}  ·  ${t.category}',
-                    style: const TextStyle(
-                        fontSize: 12, color: Colors.black38),
+    final hasNote = t.note != null && t.note!.isNotEmpty;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.card,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
-                ],
-              ),
+                  child: Icon(icon, color: color, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(t.title.isNotEmpty ? t.title : '(내용 없음)',
+                          style: const TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w500),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              [
+                                formatDateHeader(t.date),
+                                t.category,
+                                if (t.paidByUserNickname != null)
+                                  t.paidByUserNickname!,
+                                if (hasNote) t.note!,
+                              ].join(' · '),
+                              style: const TextStyle(
+                                  fontSize: 12, color: AppColors.textMuted),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            isTransfer
+                                ? '${formatCurrency(t.amount)}원'
+                                : '${isExpense ? '-' : '+'}${formatCurrency(t.amount)}원',
+                            style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: amountColor),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            Text(
-              isTransfer
-                  ? '${formatCurrency(t.amount)}원'
-                  : '${isExpense ? '-' : '+'}${formatCurrency(t.amount)}원',
-              style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: amountColor),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -559,7 +578,7 @@ class _FilterSheetState extends State<_FilterSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                  color: Colors.black12,
+                  color: AppColors.divider,
                   borderRadius: BorderRadius.circular(2)),
             ),
           ),
@@ -602,7 +621,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                         padding:
                             const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                            borderRadius: BorderRadius.circular(AppRadius.md)),
                       ),
                       child: const Text('취소'),
                     ),
@@ -625,7 +644,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                         padding:
                             const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                            borderRadius: BorderRadius.circular(AppRadius.md)),
                       ),
                       child: const Text('확인',
                           style: TextStyle(fontSize: 15)),
@@ -682,7 +701,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                 padding: EdgeInsets.symmetric(horizontal: 10),
                 child: Text('~',
                     style:
-                        TextStyle(fontSize: 16, color: Colors.black38)),
+                        TextStyle(fontSize: 16, color: AppColors.textMuted)),
               ),
               Expanded(
                 child: _DateField(
@@ -716,7 +735,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                     padding: const EdgeInsets.symmetric(horizontal: 4)),
                 child: const Text('기간 초기화',
                     style:
-                        TextStyle(fontSize: 12, color: Colors.black45)),
+                        TextStyle(fontSize: 12, color: AppColors.textMuted)),
               ),
             ),
         ],
@@ -725,7 +744,7 @@ class _FilterSheetState extends State<_FilterSheet> {
   Widget _buildAsset() {
     if (widget.assets.isEmpty) {
       return const Text('자산이 없어요',
-          style: TextStyle(fontSize: 13, color: Colors.black38));
+          style: TextStyle(fontSize: 13, color: AppColors.textMuted));
     }
     return Wrap(
       spacing: 8,
@@ -809,7 +828,7 @@ class _FilterSheetState extends State<_FilterSheet> {
             padding: EdgeInsets.symmetric(horizontal: 10),
             child: Text('~',
                 style:
-                    TextStyle(fontSize: 16, color: Colors.black38)),
+                    TextStyle(fontSize: 16, color: AppColors.textMuted)),
           ),
           Expanded(
             child: _AmountField(
@@ -846,14 +865,8 @@ class _CatTab extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
             color: selected ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 4)
-                  ]
-                : null,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            boxShadow: selected ? AppShadows.card : null,
           ),
           child: Center(
             child: Text(label,
@@ -861,7 +874,7 @@ class _CatTab extends StatelessWidget {
                   fontSize: 13,
                   fontWeight:
                       selected ? FontWeight.w700 : FontWeight.w400,
-                  color: selected ? Colors.black87 : Colors.black45,
+                  color: selected ? AppColors.textPrimary : AppColors.textMuted,
                 )),
           ),
         ),
@@ -887,7 +900,7 @@ class _DateField extends StatelessWidget {
             const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border.all(color: Colors.black12),
+          border: Border.all(color: AppColors.divider),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Column(
@@ -895,7 +908,7 @@ class _DateField extends StatelessWidget {
           children: [
             Text(label,
                 style: const TextStyle(
-                    fontSize: 11, color: Colors.black38)),
+                    fontSize: 11, color: AppColors.textMuted)),
             const SizedBox(height: 3),
             Text(
               date != null
@@ -904,7 +917,7 @@ class _DateField extends StatelessWidget {
               style: TextStyle(
                   fontSize: 13,
                   color:
-                      date != null ? Colors.black87 : Colors.black38),
+                      date != null ? AppColors.textPrimary : AppColors.textMuted),
             ),
           ],
         ),
@@ -930,7 +943,7 @@ class _AmountField extends StatelessWidget {
             const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border.all(color: Colors.black12),
+          border: Border.all(color: AppColors.divider),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Column(
@@ -938,15 +951,15 @@ class _AmountField extends StatelessWidget {
           children: [
             Text(label,
                 style: const TextStyle(
-                    fontSize: 11, color: Colors.black38)),
+                    fontSize: 11, color: AppColors.textMuted)),
             const SizedBox(height: 3),
             Text(
               amount != null ? '${formatCurrency(amount!)}원' : '미설정',
               style: TextStyle(
                   fontSize: 13,
                   color: amount != null
-                      ? Colors.black87
-                      : Colors.black38),
+                      ? AppColors.textPrimary
+                      : AppColors.textMuted),
             ),
           ],
         ),

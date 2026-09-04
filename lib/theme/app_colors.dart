@@ -8,8 +8,8 @@ class AppColors {
   static const primaryDark = Color(0xFF00816B);
   static const ink = Color(0xFF10221E);
 
-  static const expense = Color(0xFFFF6961);
-  static const income = Color(0xFF3D8BFF);
+  static const expense = Color(0xFFD32F2F);
+  static const income = Color(0xFF1976D2);
 
   static const background = Color(0xFFF2FBF8);
   static const surface = Colors.white;
