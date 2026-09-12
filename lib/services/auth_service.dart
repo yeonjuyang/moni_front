@@ -1,14 +1,21 @@
 import 'dart:math';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  // 네이버 개발자 센터에서 발급받은 값으로 교체
-  static const String _naverClientId = "";
-  static const String _naverClientSecret = "";
-  static const String _naverRedirectUri = "";
+  // 네이버 개발자 센터에서 발급받은 Client ID로 교체 (Client Secret은 백엔드에만 둔다 — 앱 바이너리는 디컴파일 가능)
+  static const String _naverClientId = "p1u4Ad75CEdISzBsm_EC";
+
+  // 네이버 개발자센터 콜백 URL은 http(s)만 허용된다.
+  // - 앱(모바일/데스크톱): 백엔드 패스스루가 code를 moni://naver_callback 로 다시 리다이렉트해준다.
+  // - 웹: flutter_web_auth_2가 같은 origin의 정적 페이지로만 돌아올 수 있어 백엔드를 거치지 않는다.
+  //   `flutter run -d chrome --web-port=5000` 처럼 포트를 고정해서 실행해야 이 값과 일치한다.
+  static const String _naverRedirectUriApp = "http://localhost:8080/api/auth/naver/callback";
+  static const String _naverRedirectUriWeb = "http://localhost:5000/naver_callback.html";
+  static String get _naverRedirectUri => kIsWeb ? _naverRedirectUriWeb : _naverRedirectUriApp;
   static const String _callbackScheme = "moni";
 
   static const String _baseUrl = 'http://localhost:8080';
@@ -43,7 +50,8 @@ class AuthService {
     );
 
     final jwt = response.data['token'] as String;
-    await _saveSession(jwt: jwt, provider: 'naver');
+    final nickname = response.data['nickname'] as String?;
+    await _saveSession(jwt: jwt, provider: 'naver', nickname: nickname);
   }
 
   static Future<void> loginWithKakao() async {
@@ -62,7 +70,8 @@ class AuthService {
     );
 
     final jwt = response.data['token'] as String;
-    await _saveSession(jwt: jwt, provider: 'kakao');
+    final nickname = response.data['nickname'] as String?;
+    await _saveSession(jwt: jwt, provider: 'kakao', nickname: nickname);
   }
 
   // 카카오/네이버 개발자 앱 키 발급 전까지 사용하는 임시 로그인.
@@ -75,7 +84,8 @@ class AuthService {
     );
 
     final jwt = response.data['token'] as String;
-    await _saveSession(jwt: jwt, provider: 'dev');
+    final savedNickname = response.data['nickname'] as String?;
+    await _saveSession(jwt: jwt, provider: 'dev', nickname: savedNickname);
   }
 
   static Future<void> logout() async {
@@ -95,11 +105,15 @@ class AuthService {
   static Future<void> _saveSession({
     required String jwt,
     required String provider,
+    String? nickname,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('jwt_token', jwt);
     await prefs.setString('login_provider', provider);
     await prefs.setBool('is_logged_in', true);
+    if (nickname != null && nickname.isNotEmpty) {
+      await prefs.setString('user_nickname', nickname);
+    }
   }
 
   static String _generateState() {

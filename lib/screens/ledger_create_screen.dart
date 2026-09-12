@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/ledger_service.dart';
 import '../utils/api_error.dart';
 import 'home_screen.dart';
@@ -17,6 +18,20 @@ class _LedgerCreateScreenState extends State<LedgerCreateScreen> {
   bool _isSaving = false;
 
   @override
+  void initState() {
+    super.initState();
+    _prefillNickname();
+  }
+
+  Future<void> _prefillNickname() async {
+    final prefs = await SharedPreferences.getInstance();
+    final nickname = prefs.getString('user_nickname');
+    if (nickname != null && nickname.isNotEmpty && mounted) {
+      _nicknameController.text = nickname;
+    }
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _nicknameController.dispose();
@@ -32,14 +47,19 @@ class _LedgerCreateScreenState extends State<LedgerCreateScreen> {
       return;
     }
 
+    final nickname = _nicknameController.text.trim();
+    if (nickname.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('이 가계부에서 사용할 내 이름을 입력해주세요')),
+      );
+      return;
+    }
+
     setState(() => _isSaving = true);
     try {
       final ledger = await LedgerService.createLedger(ledgerName: name);
-      final nickname = _nicknameController.text.trim();
-      if (nickname.isNotEmpty) {
-        await LedgerService.updateMyNickname(
-            ledgerId: ledger.ledgerId, nickname: nickname);
-      }
+      await LedgerService.updateMyNickname(
+          ledgerId: ledger.ledgerId, nickname: nickname);
       await LedgerService.saveLastLedgerId(ledger.ledgerId);
       if (!mounted) return;
       Navigator.pushReplacement(
@@ -104,7 +124,7 @@ class _LedgerCreateScreenState extends State<LedgerCreateScreen> {
                   TextField(
                     controller: _nicknameController,
                     decoration: const InputDecoration(
-                      labelText: '이 가계부에서 내 이름',
+                      labelText: '이 가계부에서 내 이름 *',
                       hintText: '예) 홍길동',
                       border: OutlineInputBorder(),
                     ),
